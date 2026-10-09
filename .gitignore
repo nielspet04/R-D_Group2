@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Raw and generated data (keep only directory placeholders)
+data/raw/**
+!data/raw/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
+
+# Generated experiment output
+results/**
+!results/figures/
+!results/figures/.gitkeep
+!results/tables/
+!results/tables/.gitkeep
+runs/
+wandb/
+
+# Model checkpoints and competition submissions
+*.ckpt
+*.pth
+*.pt
+
+# Generated documents; course reference PDFs remain tracked
+*.pdf
+!docs/reference/*.pdf
+
+# Operating-system and editor files
+.DS_Store
+.vscode/
+.idea/
+

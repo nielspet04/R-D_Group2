@@ -1,0 +1,4 @@
+mango_auth
+python-irodsclient
+tqdm
+
