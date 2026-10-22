@@ -1,4 +1,8 @@
 mango_auth
 python-irodsclient
 tqdm
+pandas
+matplotlib
+opencv-python-headless
+ipykernel
 
