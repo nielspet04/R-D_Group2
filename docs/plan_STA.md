@@ -718,30 +718,100 @@ Add tests for:
 
 ## Team division and working order
 
-### Person 1
+The work is split at the cached-feature boundary. Niels owns the upstream path from
+annotations and videos to validated feature shards. Emiel owns the downstream path
+from those feature shards to checkpoints, metrics and the final submission. This
+keeps the main handoff small and explicit:
 
-- STA temporal-window and frame-sampling logic.
-- Data audit and feature extraction.
-- Leakage tests.
-- Evaluation, fallback behavior and submission validation.
-- VSC feature-extraction jobs.
+```python
+features: float tensor [batch, 5, 512]
+valid_mask: bool tensor [batch, 5]
+verb_labels: int tensor [batch]
+noun_labels: int tensor [batch]
+```
 
-### Person 2
+Both people should first agree on one eight-event example shard and verify that it
+loads correctly before either side is considered stable.
 
-- Mean-pooling and GRU models.
-- Shared training loop.
-- Checkpointing and logging.
-- VSC training jobs.
+### Niels — data and feature pipeline
 
-### Shared
+Primary deliverable: reproducible, leak-free feature shards for train, validation
+and hidden test.
 
-- Review tensor interfaces before implementation.
-- Run the 32-event smoke job together.
-- Inspect Model 1 and Model 2 learning curves.
-- Compare results and qualitative examples.
-- Document failures and final model choice.
+- Implement `sta_segment_boundaries` and `sample_segment_frames`.
+- Implement the video reader, partial-context padding and validity masks.
+- Implement frozen R3D-18 preprocessing and feature extraction.
+- Implement resumable shard writing, manifest generation and shard validation.
+- Implement `STAFeatureDataset` and the feature-inspection command.
+- Implement `scripts/audit_sta_data.py` and its split/video checks.
+- Add unit tests for boundaries, frame selection, the one-second gap, padding,
+  deterministic extraction and feature shapes.
+- Create `environment-vsc.yml`, `slurm/sta_smoke.slurm` and
+  `slurm/sta_extract.slurm`.
+- Run the local eight-event extraction, VSC data audit, 32-event GPU smoke
+  extraction and full train/validation/test extraction.
+- Record extraction errors and make sure they are represented as `video_error`
+  rather than silently dropping events.
 
-Use separate feature branches, review through pull requests and merge only after tests pass. Push code through Git and pull it on VSC; never copy raw videos, feature shards or checkpoints into Git.
+Niels's handoff is complete when the inspection script validates every shard and
+the documented counts, masks, IDs and leakage constraints all pass.
+
+### Emiel — models, training, evaluation and submission
+
+Primary deliverable: reproducible Model 1 and Model 2 results plus a validated
+hidden-test submission.
+
+- Implement masked mean pooling and the masked `GRUCell` model.
+- Implement the shared trainer, optimizer, gradient clipping, early stopping and
+  deterministic seeding.
+- Implement checkpoint save/reload, history logging, configuration capture and
+  Git commit recording.
+- Implement verb, noun and joint-action Top-1, Top-5 and MT5R evaluation.
+- Implement Model 0 fallback for all-false masks and `video_error` events while
+  retaining every validation/test row.
+- Add unit tests for masking, output shapes, fallback behavior, metric coverage,
+  checkpoint round trips and submission validation.
+- Create `slurm/sta_train.slurm`.
+- Run the 128-example overfit tests and full Model 1 and Model 2 training jobs.
+- Generate the comparison table, select the model using validation Action MT5R,
+  retrain it on all labelled features and create `submission_sta.pt`.
+- Validate IDs, order, shapes and finite outputs, then help package the final ZIP
+  with the AR submission.
+
+Emiel's handoff is complete when both validation result files are reproducible,
+the chosen final checkpoint is saved and the submission validator passes.
+
+### Shared checkpoints and review
+
+- Before coding: freeze the shard schema, label mapping and Model 0 probability
+  interface together.
+- After the local smoke test: Emiel reviews one shard and Niels reviews the model
+  input/masking code.
+- After the VSC smoke job: jointly confirm CUDA use, feature shapes, cutoff rules
+  and forward passes through both models.
+- Before full training: Niels signs off on feature coverage; Emiel signs off on a
+  successful tiny overfit and checkpoint reload.
+- After full training: inspect both learning curves, compare all three models and
+  document failures or negative results honestly.
+- Before submission: independently run the submission validator and verify the
+  final archive contents.
+
+### Recommended implementation order
+
+1. Agree on interfaces and write the unit-test skeletons.
+2. Work in parallel: Niels builds extraction using a synthetic/local tiny set;
+   Emiel builds models and training using synthetic feature tensors.
+3. Integrate on the eight-event local shard and fix interface mismatches.
+4. Run the joint 32-event VSC smoke job.
+5. Niels launches full feature extraction. While it runs, Emiel finishes the
+   trainer, evaluator, logging and submission validator.
+6. Emiel runs the tiny overfit tests, then full Model 1 and Model 2 training.
+7. Jointly select, retrain and package the final model.
+
+Use separate feature branches, review through pull requests and merge only after
+tests pass. Suggested branches are `codex/niels-sta-features` and
+`codex/emiel-sta-models`. Push code through Git and pull it on VSC; never copy raw
+videos, feature shards or checkpoints into Git.
 
 ## Assumptions and fixed defaults
 
