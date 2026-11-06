@@ -68,3 +68,27 @@ provided annotation CSV files under `data/raw/EPIC-KITCHENS/annotations/`.
 - Never commit raw videos, processed datasets, model checkpoints, credentials,
   or generated results.
 
+## STA Model 0 frequency baseline
+
+The first STA baseline predicts the training-set verb and noun frequencies for
+every validation event. It does not read video. Its purpose is to verify the
+participant split, score-vector format, valid verb-noun action mapping, and
+class-mean Top-5 recall before training a video model.
+
+Create the participant split if it is not already present:
+
+```bash
+python -m src.data_processing
+```
+
+Run the hand-checkable metric tests and evaluate Model 0:
+
+```bash
+python -m unittest discover -s tests -v
+python scripts/evaluate_sta_prior.py
+```
+
+The generated metric file is written to
+`results/tables/sta_model_0_frequency.json`. Generated results are ignored by
+Git and should be reproducible from the committed code.
+

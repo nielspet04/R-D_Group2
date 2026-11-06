@@ -22,6 +22,10 @@ data/raw/**
 data/processed/**
 !data/processed/.gitkeep
 
+# Large local archives
+vsc_intro/BioID_FaceDatabase.zip
+vsc_intro_upload.tar.gz
+
 # Generated experiment output
 results/**
 !results/figures/
