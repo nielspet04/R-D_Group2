@@ -111,6 +111,8 @@ Each shard contains:
 
 ```python
 {
+    "schema_version": 1,
+    "split": str,                           # train, validation or test
     "features": float16 tensor [N, 5, 512],
     "valid_mask": bool tensor [N, 5],
     "verb_labels": int64 tensor [N],       # absent for hidden test
@@ -122,6 +124,11 @@ Each shard contains:
     "status": list[str],  # full, partial, no_context, video_error
 }
 ```
+
+The exact executable handoff agreement, including dtypes, status/mask rules,
+ordering and the manifest columns, is documented in
+[`docs/sta_feature_shard_contract.md`](sta_feature_shard_contract.md) and validated
+by `src/sta_features.py`.
 
 Fixed shard boundaries make extraction resumable. With `--resume`, a completed shard is validated and skipped. A temporary file is written first and renamed only after validation, preventing interrupted jobs from leaving apparently complete shards.
 
