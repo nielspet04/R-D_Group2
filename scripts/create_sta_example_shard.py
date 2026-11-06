@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.sta_features import save_sta_feature_shard
 
 
-DEFAULT_OUTPUT = Path("results/local_sta_contract/train/shard_00000.pt")
+DEFAULT_OUTPUT = PROJECT_ROOT / "results/local_sta_contract/train/shard_00000.pt"
 
 
 def build_example_shard() -> dict:
