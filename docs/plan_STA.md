@@ -26,6 +26,29 @@ The current split contains:
 | Train | 59,767 | 58,895 | 796 | 76 |
 | Validation | 7,450 | 7,307 | 119 | 24 |
 
+## Current progress — 6 November 2026
+
+The first cached-feature handoff work has started:
+
+- The version 1 feature-shard agreement is documented in
+  [`docs/sta_feature_shard_contract.md`](sta_feature_shard_contract.md).
+- The shared shard validator and save/load helpers are implemented in
+  `src/sta_features.py`.
+- A deterministic eight-event contract shard can be generated with
+  `scripts/create_sta_example_shard.py`. It covers full context, partial context,
+  no context and a video error.
+- Initial automated contract tests are present in `tests/test_sta_features.py`.
+- Emiel added `notebooks/3_sta_feature_shard_smoke_test.ipynb` for the first
+  integration check. It creates the example shard when necessary, loads it through
+  the shared validator, displays its shapes, dtypes, masks, statuses and IDs, checks
+  zero padding and finite values, and converts the stored features from `float16`
+  to training-time `float32`.
+
+The notebook and automated contract tests still need to be run with the `rd_lab`
+PyTorch kernel. After they pass, the same notebook should be pointed at the agreed
+real eight-event shard from Niels. Emiel's next implementation task is the masked
+mean-pooling model, followed by the masked GRU model and their unit tests.
+
 ## 1. Build and validate the shared STA feature pipeline
 
 ### Temporal window definition
