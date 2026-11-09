@@ -1,0 +1,86 @@
+clips: 7155
+verb  top1 56.93  top5 83.44
+noun  top1 38.64  top5 63.61
+action top1 27.87
+
+== action outcome (top-1) ==
+verb right + noun right     27.9 %
+verb right, noun wrong      29.1 %
+verb wrong, noun right      10.8 %
+both wrong                  32.3 %
+
+== verb: classes with >= 30 val clips: 26 of 71 ==
+strongest:
+  wash (2)                     recall  83.8%  (709 clips)
+  open (3)                     recall  80.1%  (554 clips)
+  take (0)                     recall  80.0%  (1399 clips)
+  cut (7)                      recall  72.9%  (303 clips)
+  close (4)                    recall  68.1%  (351 clips)
+  turn-on (6)                  recall  60.1%  (281 clips)
+  put-on (1)                   recall  59.6%  (1204 clips)
+  stir (10)                    recall  52.4%  (166 clips)
+weakest:
+  arrange (40)                 recall   0.0%  (33 clips)  -> often put-on (1)
+  immerge (56)                 recall   0.0%  (35 clips)  -> often wash (2)
+  scrub (29)                   recall   0.0%  (54 clips)  -> often wash (2)
+  compress (21)                recall   0.0%  (83 clips)  -> often stir (10)
+  check (24)                   recall   1.9%  (52 clips)  -> often take (0)
+  squeeze (18)                 recall   2.1%  (47 clips)  -> often wash (2)
+  crack (30)                   recall   4.4%  (68 clips)  -> often take (0)
+  flip (22)                    recall   5.9%  (34 clips)  -> often turn (23)
+most frequent confusions (true -> predicted):
+  put-on (1)                 -> put-into (5)               187x
+  put-on (1)                 -> take (0)                   127x
+  put-into (5)               -> put-on (1)                 126x
+  take-out (12)              -> take (0)                   86x
+  take (0)                   -> put-on (1)                 80x
+  put-into (5)               -> take (0)                   53x
+  scrub (29)                 -> wash (2)                   51x
+  take (0)                   -> put-into (5)               51x
+  verb accuracy, frequent (>=100 train clips)    59.1 %  (6874 clips)
+  verb accuracy, middle (10-99)                   3.5 %  (257 clips)
+  verb accuracy, rare (<10)                       0.0 %  (24 clips)
+
+== noun: classes with >= 30 val clips: 67 of 174 ==
+strongest:
+  carrot (41)                  recall  86.1%  (115 clips)
+  door (3)                     recall  81.5%  (205 clips)
+  top (42)                     recall  78.7%  (61 clips)
+  fridge (12)                  recall  75.1%  (169 clips)
+  dishwasher (70)              recall  73.6%  (53 clips)
+  clothes (73)                 recall  72.0%  (50 clips)
+  tap (0)                      recall  71.0%  (417 clips)
+  board:cutting (18)           recall  70.5%  (132 clips)
+weakest:
+  processor:food (147)         recall   0.0%  (32 clips)  -> often bowl (7)
+  oat (127)                    recall   0.0%  (31 clips)  -> often rice (55)
+  ? (176)                      recall   0.0%  (33 clips)  -> often sauce:tomato (47)
+  mixture (71)                 recall   0.0%  (32 clips)  -> often sauce:tomato (47)
+  onion:spring (128)           recall   0.0%  (53 clips)  -> often knife (4)
+  piece:chicken (57)           recall   0.8%  (127 clips)  -> often hand (11)
+  heat (65)                    recall   2.7%  (37 clips)  -> often hob (24)
+  yoghurt (98)                 recall   2.9%  (35 clips)  -> often powder:curry (138)
+most frequent confusions (true -> predicted):
+  plate (2)                  -> bowl (7)                   52x
+  bowl (7)                   -> plate (2)                  41x
+  piece:chicken (57)         -> hand (11)                  38x
+  plastic (26)               -> bag:rice (19)              35x
+  bowl (7)                   -> cup (13)                   30x
+  fork (14)                  -> spoon (1)                  30x
+  meat (28)                  -> saucepan (5)               28x
+  tap (0)                    -> hand (11)                  26x
+  noun accuracy, frequent (>=100 train clips)    42.7 %  (6375 clips)
+  noun accuracy, middle (10-99)                   8.7 %  (526 clips)
+  noun accuracy, rare (<10)                       0.0 %  (254 clips)
+
+== per participant (validation) ==
+             clips  verb_top1  noun_top1  action_top1
+participant                                          
+P08           2024       56.9       40.6         29.0
+P20            922       47.2       29.0         18.5
+P21            245       45.3       31.0         21.2
+P28           2373       66.2       45.2         35.4
+P29            989       49.6       28.8         18.7
+P37            602       51.8       40.2         26.6
+
+Tables written to /vsc-hard-mounts/leuven-data/394/vsc39410/epic-kitchens/R-D_Group2/ar_baseline_videomae/results/videomae_b_f16_seed1/analysis
