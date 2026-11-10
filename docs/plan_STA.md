@@ -26,7 +26,7 @@ The current split contains:
 | Train | 59,767 | 58,895 | 796 | 76 |
 | Validation | 7,450 | 7,307 | 119 | 24 |
 
-## Current progress — 6 November 2026
+## Current progress — 10 November 2026
 
 The first cached-feature handoff work has started:
 
@@ -43,11 +43,25 @@ The first cached-feature handoff work has started:
   the shared validator, displays its shapes, dtypes, masks, statuses and IDs, checks
   zero padding and finite values, and converts the stored features from `float16`
   to training-time `float32`.
+- The feature-shard smoke notebook has been run successfully with the `rd_lab`
+  PyTorch kernel against the deterministic eight-event contract shard.
+- Emiel added `notebooks/4_sta_masked_mean_pool_smoke_test.ipynb` to prototype
+  Model 1. It loads the validated contract shard, performs masked mean pooling,
+  checks the verb and noun output shapes, proves padded features cannot affect
+  predictions, verifies all-false masks produce a finite zero representation and
+  confirms that the combined cross-entropy loss can backpropagate.
+- Model 1 is implemented as `MaskedMeanPoolSTA` in `src/sta_model_1.py`. It
+  averages only valid `[5, 512]` segment features, applies dropout and produces
+  separate 97-class verb and 300-class noun logits.
+- Permanent Model 1 unit tests are implemented in `tests/test_sta_model_1.py`.
+  All seven tests pass in `rd_lab`; they cover output shapes, masked averaging,
+  padding isolation, all-false masks, finite gradients, feature-size validation
+  and boolean-mask validation.
 
-The notebook and automated contract tests still need to be run with the `rd_lab`
-PyTorch kernel. After they pass, the same notebook should be pointed at the agreed
-real eight-event shard from Niels. Emiel's next implementation task is the masked
-mean-pooling model, followed by the masked GRU model and their unit tests.
+The feature-shard notebook still needs to be pointed at the agreed real eight-event
+shard from Niels when it becomes available. Emiel's next implementation task is
+the masked GRU model and its unit tests, followed by the shared trainer and
+evaluation pipeline.
 
 ## 1. Build and validate the shared STA feature pipeline
 
