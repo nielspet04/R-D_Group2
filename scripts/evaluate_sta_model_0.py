@@ -20,7 +20,7 @@ from src.evaluation import (  # noqa: E402
     joint_action_scores,
     top_k_accuracy,
 )
-from src.sta_models import FrequencyPriorSTA  # noqa: E402
+from src.sta_model_0 import FrequencyPriorSTA  # noqa: E402
 
 
 NUM_VERBS = 97
