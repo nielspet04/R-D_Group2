@@ -195,3 +195,160 @@ def load_sta_feature_shard(path: Path, *, expected_split: str | None = None) -> 
         raise ValueError(f"Expected a dictionary in {path}")
     validate_sta_feature_shard(shard, expected_split=expected_split)
     return shard
+
+class STAFeatureDataset:
+    # lazy reader for validated STA feature shards.  This class is not a PyTorch Dataset because it
+    # does not support indexing or length.  It is a generator of shards, which are validated dictionaries with the same contract as the in-memory shards used for training and evaluation.
+    MANIFEST_FIELDS ={
+        "schema_version",
+        "split",
+        "shard_index",
+        "shard_file",
+        "start_index",
+        "end_index_exclusive",
+        "event_count",
+    }
+    def __init__(self, feature_root: Path, split: str):
+        import csv
+        if split not in ALLOWED_SPLITS:
+            raise ValueError(f"split must be one of {sorted(ALLOWED_SPLITS)}, got {split!r}")
+        self.feature_root = Path(feature_root)
+        self.split = split
+        self.split_directory = self.feature_root / split
+        self.manifest_path = self.split_directory / "manifest.csv"
+        if not self.manifest_path.is_file():
+            raise FileNotFoundError(f"Manifest file not found: {self.manifest_path}")
+        with self.manifest_path.open(newline="") as file:
+            reader = csv.DictReader(file)
+            if reader.fieldnames is None:
+                raise ValueError(f"Manifest file {self.manifest_path} is empty or malformed")
+            missing = self.MANIFEST_FIELDS.difference(reader.fieldnames)
+            if missing:
+                raise ValueError(f"Manifest file {self.manifest_path} is missing fields: {sorted(missing)}")
+            raw_rows = list(reader)
+        if not raw_rows:
+            raise ValueError(f"Manifest file {self.manifest_path} is empty")
+        self.manifest_rows: list[dict[str, Any]] = []
+        expected_start = 0
+        for expected_shard_index, raw_row in enumerate(raw_rows):
+            row = {
+                "schema_version": int(raw_row["schema_version"]),
+                "split": raw_row["split"],
+                "shard_index": int(raw_row["shard_index"]),
+                "shard_file": raw_row["shard_file"],
+                "start_index": int(raw_row["start_index"]),
+                "end_index_exclusive": int(raw_row["end_index_exclusive"]),
+                "event_count": int(raw_row["event_count"]),
+            }
+            if row["schema_version"] != SCHEMA_VERSION:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has unsupported schema_version {row['schema_version']!r}; "
+                    f"expected {SCHEMA_VERSION}"
+                )
+            if row["split"] != split:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has split {row['split']!r}; "
+                    f"expected {split!r}"
+                )
+            if row["shard_index"] != expected_shard_index:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has non-sequential shard_index {row['shard_index']}; "
+                    f"expected {expected_shard_index}"
+                )
+            if row["start_index"] != expected_start:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has non-sequential start_index {row['start_index']}; "
+                    f"expected {expected_start}"
+                )
+            if row["end_index_exclusive"] <= row["start_index"]:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has end_index_exclusive {row['end_index_exclusive']} "
+                    f"not greater than start_index {row['start_index']}"
+                )
+            if row["event_count"] != row["end_index_exclusive"] - row["start_index"]:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has event_count {row['event_count']} "
+                    f"not equal to end_index_exclusive - start_index ({row['end_index_exclusive']} - {row['start_index']})"
+                )
+            expected_filename = (
+                f"shard_{expected_shard_index:05d}.pt"
+                
+            )
+            if row["shard_file"] != expected_filename:
+                raise ValueError(
+                    f"Manifest file {self.manifest_path} has shard_file {row['shard_file']!r}; "
+                    f"expected {expected_filename!r}"
+                )
+            shard_path = self.split_directory / row["shard_file"]
+            if not shard_path.is_file():
+                raise FileNotFoundError(f"Shard file not found: {shard_path}")
+            self.manifest_rows.append(row)
+            expected_start = row["end_index_exclusive"]
+
+        self.event_count = expected_start
+        self._cached_shard_index: int | None = None
+        self._cached_shard: dict | None = None
+    def __len__(self) -> int:
+        return self.event_count
+    def _find_manifest_row(self, index: int) -> dict[str, Any]:
+        for row in self.manifest_rows:
+            if row["start_index"] <= index < row["end_index_exclusive"]:
+                return row
+        raise IndexError(f"Index {index} is out of bounds for split {self.split!r} with {self.event_count} events") 
+    def _load_shard(self, row: dict[str, Any]) -> dict:
+        shard_index = row["shard_index"]
+        if self._cached_shard_index != shard_index:
+            shard_path = (
+                self.split_directory / row["shard_file"]
+            )
+            shard = load_sta_feature_shard(shard_path, expected_split=self.split)
+            if len(shard["narration_ids"]) != row["event_count"]:
+                raise ValueError(
+                    f"Shard file {shard_path} has {len(shard['narration_ids'])} events; "
+                    f"expected {row['event_count']}"
+                )
+            self._cached_shard_index = shard_index
+            self._cached_shard = shard
+        assert self._cached_shard is not None
+        return self._cached_shard
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        if not isinstance(index, int):
+            raise TypeError("Dataset index must be an integer")
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+
+        row = self._find_manifest_row(index)
+        shard = self._load_shard(row)
+        local_index = index - row["start_index"]
+
+        item = {
+            "features": shard["features"][
+                local_index
+            ].to(dtype=_torch().float32),
+            "valid_mask": shard["valid_mask"][local_index],
+            "narration_id": shard["narration_ids"][
+                local_index
+            ],
+            "video_id": shard["video_ids"][local_index],
+            "action_start_seconds": float(
+                shard["action_start_seconds"][
+                    local_index
+                ].item()
+            ),
+            "observation_end_seconds": float(
+                shard["observation_end_seconds"][
+                    local_index
+                ].item()
+            ),
+            "status": shard["status"][local_index],
+        }
+
+        if self.split in LABELLED_SPLITS:
+            item["verb_label"] = int(
+                shard["verb_labels"][local_index].item()
+            )
+            item["noun_label"] = int(
+                shard["noun_labels"][local_index].item()
+            )
+
+        return item
