@@ -314,7 +314,7 @@ Run tests:
 
 ```bash
 python -m unittest discover -s tests -v
-python scripts/evaluate_sta_prior.py
+python scripts/evaluate_sta_model_0.py
 ```
 
 Extract a tiny local feature set from readable videos:

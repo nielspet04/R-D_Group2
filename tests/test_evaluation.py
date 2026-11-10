@@ -11,7 +11,7 @@ from src.evaluation import (
     joint_action_scores,
     top_k_accuracy,
 )
-from src.sta_models import FrequencyPriorSTA
+from src.sta_model_0 import FrequencyPriorSTA
 
 
 class EvaluationTests(unittest.TestCase):

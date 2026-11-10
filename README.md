@@ -85,7 +85,7 @@ Run the hand-checkable metric tests and evaluate Model 0:
 
 ```bash
 python -m unittest discover -s tests -v
-python scripts/evaluate_sta_prior.py
+python scripts/evaluate_sta_model_0.py
 ```
 
 The generated metric file is written to
