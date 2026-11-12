@@ -96,21 +96,37 @@ The current split contains:
   the expected point, all four artifacts are written and the returned model is
   restored to the best rather than final epoch.
 
+### Training entry point
+
+- `scripts/train_sta.py` trains either `mean_pool` or `gru` directly from the
+  shared `STAFeatureDataset`. It retains the fixed `TrainingConfig` defaults,
+  fits the Model 0 fallback from training-shard labels only, and builds valid
+  action pairs from the complete supplied annotation CSV in the same way as the
+  Model 0 evaluator.
+- Training uses a deterministic shard-aware batch sampler. Each epoch randomizes
+  shard order and event order within each shard with seed 42, but no batch spans
+  two shards. Validation remains sequential. This preserves event randomness
+  without thrashing the dataset's one-shard cache.
+- The CLI accepts the model, feature root, annotation path, output root and
+  device. `--smoke-test-epochs` is the only baseline override and is explicitly
+  limited to small correctness checks.
+- `tests/test_train_sta.py` creates independent contract-valid train and
+  validation shard trees. The validation fixture covers full, partial and
+  all-false masks, and the end-to-end test runs both architectures for one smoke
+  epoch, checks fallback accounting and all four output artifacts, and reloads
+  both checkpoints.
+
 ### Verification and next work
 
-- All seven focused training/orchestration tests pass in `rd_lab`.
-- The complete repository suite passes: 65 tests in total.
-- The latest committed and pushed Git commit is `3dd1df1` (`git checkpoints added
-  to training`). At the time of this plan update, `src/sta_trainer.py` and
-  `tests/test_sta_trainer.py` are untracked and this plan file is modified, so the
-  working tree is correctly considered dirty.
+- All 15 focused loader/training/orchestration/entry-point tests pass in
+  `rd_lab`.
+- The complete repository suite passes: 69 tests in total.
+- The latest committed and pushed Git commit visible during this update is
+  `568d1f3`. The training entry point, its integration tests and this plan update
+  remain uncommitted as requested.
 - No standalone training run or performance experiment has been executed. The
-  small synthetic unit-test updates establish correctness, not model performance.
-- The next implementation step is `scripts/train_sta.py`: construct the shared
-  `STAFeatureDataset` loaders, fit the Model 0 fallback from training labels,
-  build valid action pairs from the provided annotations and call the shared
-  orchestrator. Separate synthetic train and validation shard fixtures should be
-  used for the first end-to-end smoke check.
+  small synthetic integration fixtures establish correctness, not model
+  performance.
 - Video extraction, VSC jobs, submission generation and the standalone evaluation
   command remain later tasks and have not been started.
 
