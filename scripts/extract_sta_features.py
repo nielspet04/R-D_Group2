@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import pickle
 import sys
 from pathlib import Path
-from decorator import DEF
 import pandas as pd
 import torch
 from tqdm import tqdm
@@ -13,7 +13,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 from src.data_processing import index_videos, timestamp_to_seconds
 from src.sta_feature_extraction import (build_r3d18_feature_extractor, extract_event_batch)
-from src.sta_features import (SCHEMA_VERSION, save_sta_feature_shard)
+from src.sta_features import (
+    SCHEMA_VERSION,
+    load_sta_feature_shard,
+    save_sta_feature_shard,
+)
 
 DEFAULT_RAW_DIR = PROJECT_ROOT / "data/raw"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data/processed/sta_features"
@@ -208,13 +212,19 @@ def existing_shard_is_valid(
             shard_path,
             expected_split=split,
         )
-    except (OSError, RuntimeError, ValueError):
+    except (EOFError, OSError, RuntimeError, ValueError, pickle.UnpicklingError) as exc:
+        print(f"Rebuilding unreadable shard {shard_path}: {exc}", flush=True)
         return False
 
-    return (
-        len(shard["narration_ids"]) == len(expected_ids)
-        and shard["narration_ids"] == expected_ids
-    )
+    if shard["narration_ids"] != expected_ids:
+        print(f"Rebuilding shard with different narration IDs: {shard_path}", flush=True)
+        return False
+
+    if "video_error" in shard["status"]:
+        print(f"Retrying shard with video errors: {shard_path}", flush=True)
+        return False
+
+    return True
 
 
 def main() -> None:
@@ -347,6 +357,20 @@ def main() -> None:
                 device="cpu",
             )
 
+            stored_action_starts = torch.tensor(
+                action_starts[shard_start:shard_stop],
+                dtype=torch.float32,
+            )
+            stored_observation_ends = torch.tensor(
+                observation_ends[shard_start:shard_stop],
+                dtype=torch.float32,
+            )
+            if args.split in {"train", "validation"}:
+                # Keep independently rounded timestamps within the shard contract.
+                stored_observation_ends = torch.minimum(
+                    stored_observation_ends, stored_action_starts - 1.0
+                )
+
             shard = {
                 "schema_version": SCHEMA_VERSION,
                 "split": args.split,
@@ -358,14 +382,8 @@ def main() -> None:
                     .astype(str)
                     .tolist()
                 ),
-                "action_start_seconds": torch.tensor(
-                    action_starts[shard_start:shard_stop],
-                    dtype=torch.float32,
-                ),
-                "observation_end_seconds": torch.tensor(
-                    observation_ends[shard_start:shard_stop],
-                    dtype=torch.float32,
-                ),
+                "action_start_seconds": stored_action_starts,
+                "observation_end_seconds": stored_observation_ends,
                 "status": statuses,
             }
 
