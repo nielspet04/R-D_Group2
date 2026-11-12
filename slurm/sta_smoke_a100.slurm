@@ -15,7 +15,7 @@ set -euo pipefail
 
 module load cluster/wice/gpu_a100
 source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic
+conda activate rd_epic_cuda
 export TORCH_HOME="$VSC_DATA/torch-cache"
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=4

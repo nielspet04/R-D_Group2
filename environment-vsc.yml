@@ -1,19 +1,17 @@
-name: rd_epic
+name: rd_epic_cuda
 
 channels:
-  - pytorch
-  - nvidia
   - conda-forge
 
 dependencies:
   - python=3.11
-  - pytorch=2.5.1
-  - torchvision=0.20.1
-  - pytorch-cuda=11.8
-  - numpy=1.26
-  - pandas=2.2
-  - opencv=4.10
-  - matplotlib=3.9
-  - tqdm=4.66
   - pip
-  
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu118
+      - numpy==1.26.4
+      - pandas==2.2.3
+      - matplotlib==3.9.2
+      - tqdm==4.66.6
+      - opencv-python-headless==4.10.0.84
+      - torch==2.5.1+cu118
+      - torchvision==0.20.1+cu118
