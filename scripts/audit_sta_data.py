@@ -215,14 +215,16 @@ def main() -> None:
     train_counts = count_context_statuses(train)
     validation_counts = count_context_statuses(validation)
 
+        # Status counts follow segment validity masks.
+    # A clipped segment remains valid when it contains usable context.
     expected_train = {
-        "full": 58_895,
-        "partial": 796,
+        "full": 59_041,
+        "partial": 650,
         "no_context": 76,
     }
     expected_validation = {
-        "full": 7_307,
-        "partial": 119,
+        "full": 7_333,
+        "partial": 93,
         "no_context": 24,
     }
 
