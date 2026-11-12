@@ -57,11 +57,27 @@ The first cached-feature handoff work has started:
   All seven tests pass in `rd_lab`; they cover output shapes, masked averaging,
   padding isolation, all-false masks, finite gradients, feature-size validation
   and boolean-mask validation.
+- Model 2 is implemented as `MaskedGRUSTA` in `src/sta_model_2.py`. It uses
+  one chronological `GRUCell` with hidden size 512, preserves the hidden state
+  on invalid segments and produces separate verb and noun logits.
+- Permanent Model 2 tests are implemented in `tests/test_sta_model_2.py`.
+  All 14 tests pass in `rd_lab`; they cover output shapes and finite values,
+  exactly zero all-false representations, leading and middle padding,
+  isolation from invalid feature values, chronological order sensitivity,
+  finite gradients with all-false events excluded from the loss, and input
+  and constructor validation.
+- The complete unit-test suite passes: 28 tests, including all seven Model 1
+  tests. Model 2 was tested directly; notebook 5 was intentionally skipped.
+- The Model 2 implementation and tests are currently untracked on `STA_dev`;
+  they have not been committed. The latest commit remains `c37b6fb`.
 
 The feature-shard notebook still needs to be pointed at the agreed real eight-event
 shard from Niels when it becomes available. Emiel's next implementation task is
-the masked GRU model and its unit tests, followed by the shared trainer and
-evaluation pipeline.
+the shared trainer for Models 1 and 2, using synthetic shards while waiting for
+Niels's real features. Reuse the existing evaluation utilities where needed for
+validation and best-checkpoint selection; the standalone evaluation pipeline
+remains a subsequent task. Coordinate any temporary shard-loading adapter with
+Niels, who owns `STAFeatureDataset`, rather than building a competing data pipeline.
 
 ## 1. Build and validate the shared STA feature pipeline
 
