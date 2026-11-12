@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -19,7 +21,10 @@ if torch is not None:
         TrainingConfig,
         build_model,
         build_optimizer,
+        get_git_provenance,
+        load_checkpoint,
         masked_classification_loss,
+        save_checkpoint,
         train_one_epoch,
         validate_one_epoch,
     )
@@ -242,6 +247,95 @@ class STATrainingTests(unittest.TestCase):
         ):
             with self.subTest(metric=metric_name):
                 self.assertEqual(metrics[metric_name], 1.0)
+
+    def test_checkpoint_round_trip_restores_predictions_and_metadata(self):
+        torch.manual_seed(42)
+        config = self.small_config("mean_pool")
+        model = build_model(config)
+        optimizer = build_optimizer(model, config)
+        batch = make_train_batch(has_context=True)
+
+        # Populate both model parameters and AdamW optimizer state.
+        train_one_epoch(
+            model,
+            [batch],
+            optimizer,
+            torch.device("cpu"),
+        )
+
+        model.eval()
+        with torch.inference_mode():
+            expected_predictions = model(
+                batch["features"].float(),
+                batch["valid_mask"],
+            )
+
+        validation_metrics = {
+            "validation_loss": 2.5,
+            "action_mt5r": 0.125,
+        }
+        expected_provenance = get_git_provenance()
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            checkpoint_path = Path(temporary_directory) / "best.pt"
+            save_checkpoint(
+                checkpoint_path,
+                model,
+                optimizer,
+                epoch=3,
+                config=config,
+                validation_metrics=validation_metrics,
+            )
+
+            restored_model = build_model(config)
+            restored_optimizer = build_optimizer(
+                restored_model,
+                config,
+            )
+            checkpoint = load_checkpoint(
+                checkpoint_path,
+                model=restored_model,
+                optimizer=restored_optimizer,
+            )
+
+            restored_model.eval()
+            with torch.inference_mode():
+                restored_predictions = restored_model(
+                    batch["features"].float(),
+                    batch["valid_mask"],
+                )
+
+            for expected, restored in zip(
+                expected_predictions,
+                restored_predictions,
+            ):
+                self.assertTrue(torch.equal(expected, restored))
+
+            self.assertEqual(checkpoint["epoch"], 3)
+            self.assertEqual(checkpoint["seed"], 42)
+            self.assertEqual(
+                checkpoint["configuration"],
+                config.to_dict(),
+            )
+            self.assertEqual(
+                checkpoint["validation_metrics"],
+                validation_metrics,
+            )
+            self.assertEqual(
+                checkpoint["git_commit"],
+                expected_provenance["git_commit"],
+            )
+            self.assertEqual(
+                checkpoint["git_dirty"],
+                expected_provenance["git_dirty"],
+            )
+
+            original_optimizer_state = optimizer.state_dict()
+            restored_optimizer_state = restored_optimizer.state_dict()
+            self.assertEqual(
+                len(restored_optimizer_state["state"]),
+                len(original_optimizer_state["state"]),
+            )
 
 
 if __name__ == "__main__":

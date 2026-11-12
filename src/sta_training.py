@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import random
+import subprocess
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 import numpy as np
@@ -20,6 +22,9 @@ from src.evaluation import (
 from src.sta_model_0 import FrequencyPriorSTA
 from src.sta_model_1 import MaskedMeanPoolSTA
 from src.sta_model_2 import MaskedGRUSTA
+
+
+CHECKPOINT_SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -348,3 +353,128 @@ def validate_one_epoch(
             action_labels, action_scores, k=5
         ),
     }
+
+
+def get_git_provenance(
+    repository_root: Path | None = None,
+) -> dict[str, str | bool]:
+    """Return the current Git commit and working-tree state."""
+    if repository_root is None:
+        repository_root = Path(__file__).resolve().parents[1]
+
+    repository_root = Path(repository_root)
+    commit_result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    status_result = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=normal"],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    return {
+        "git_commit": commit_result.stdout.strip(),
+        "git_dirty": bool(status_result.stdout.strip()),
+    }
+
+
+def save_checkpoint(
+    path: Path,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    epoch: int,
+    config: TrainingConfig,
+    validation_metrics: Mapping[str, Any],
+    *,
+    repository_root: Path | None = None,
+) -> Path:
+    """Atomically save a reproducible STA training checkpoint."""
+    if epoch < 1:
+        raise ValueError("epoch must be at least 1")
+
+    # Read Git state before creating output files so the checkpoint cannot
+    # affect its own recorded dirty-tree status.
+    provenance = get_git_provenance(repository_root)
+    checkpoint = {
+        "schema_version": CHECKPOINT_SCHEMA_VERSION,
+        "model_state": model.state_dict(),
+        "optimizer_state": optimizer.state_dict(),
+        "epoch": epoch,
+        "seed": config.seed,
+        "configuration": config.to_dict(),
+        "validation_metrics": dict(validation_metrics),
+        **provenance,
+    }
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    torch.save(checkpoint, temporary_path)
+    temporary_path.replace(path)
+    return path
+
+
+def load_checkpoint(
+    path: Path,
+    *,
+    model: nn.Module | None = None,
+    optimizer: torch.optim.Optimizer | None = None,
+    map_location: str | torch.device = "cpu",
+) -> dict[str, Any]:
+    """Load a checkpoint and optionally restore model and optimizer state."""
+    path = Path(path)
+    try:
+        checkpoint = torch.load(
+            path,
+            map_location=map_location,
+            weights_only=True,
+        )
+    except TypeError:
+        checkpoint = torch.load(
+            path,
+            map_location=map_location,
+        )
+
+    if not isinstance(checkpoint, dict):
+        raise ValueError(f"Checkpoint must contain a dictionary: {path}")
+
+    required_fields = {
+        "schema_version",
+        "model_state",
+        "optimizer_state",
+        "epoch",
+        "seed",
+        "configuration",
+        "validation_metrics",
+        "git_commit",
+        "git_dirty",
+    }
+    missing_fields = required_fields.difference(checkpoint)
+    if missing_fields:
+        raise ValueError(
+            f"Checkpoint is missing fields: {sorted(missing_fields)}"
+        )
+
+    if checkpoint["schema_version"] != CHECKPOINT_SCHEMA_VERSION:
+        raise ValueError(
+            "Unsupported checkpoint schema version "
+            f"{checkpoint['schema_version']!r}"
+        )
+
+    if model is not None:
+        model.load_state_dict(checkpoint["model_state"])
+
+    if optimizer is not None:
+        if model is None:
+            raise ValueError(
+                "A model must be provided when restoring an optimizer"
+            )
+        optimizer.load_state_dict(checkpoint["optimizer_state"])
+
+    return checkpoint
