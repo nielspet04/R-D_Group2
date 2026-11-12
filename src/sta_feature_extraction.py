@@ -26,13 +26,19 @@ def sta_segment_boundaries(
 
     observation_end = action_start - gap_seconds
     segment_duration = context_seconds / segment_seconds
-    window_start = observation_end - context_seconds
+    
 
     boundaries: list[tuple[float, float]] = []
     valid_mask: list[bool] = []
     for index in range(segment_seconds):
-        segment_start = window_start + index * segment_duration
-        segment_end = segment_start + segment_duration
+        segment_start = (
+            observation_end
+            - (segment_seconds - index) * segment_duration
+        )
+        segment_end = (
+            observation_end
+            - (segment_seconds - index - 1) * segment_duration
+        )
         start = max(0.0, segment_start)
         stop = max(0.0, segment_end)
         valid = stop > start
@@ -64,8 +70,12 @@ def sample_segment_indices(
     if frame_count <= 0:
         raise ValueError(f"frame_count must be positive, got {frame_count}")    
 
-    first_index = int(math.ceil(segment_start * fps))
-    stop_index = int(math.ceil(segment_stop * fps))
+        # Include neighboring candidates, then enforce timestamp bounds directly.
+    first_index = max(
+        0,
+        int(math.floor(segment_start * fps)) - 1,
+    )
+    stop_index = int(math.ceil(segment_stop * fps)) + 1
 
     if total_video_frames is not None:
         if total_video_frames <= 0:
@@ -76,7 +86,17 @@ def sample_segment_indices(
         raise RuntimeError(f"no frames available in segment [{segment_start}, {segment_stop}) at {fps} fps")
 
     available = np.arange(first_index, stop_index, dtype=np.int64)
+    frame_times = available.astype(np.float64) / fps
+    available = available[
+        (frame_times >= segment_start)
+        & (frame_times < segment_stop)
+    ]
 
+    if available.size == 0:
+        raise RuntimeError(
+            f"no frames available in segment "
+            f"[{segment_start}, {segment_stop}) at {fps} fps"
+        )
     positions = np.linspace(0, len(available) - 1, num=frame_count, dtype=np.int64,)
     selected = available[positions]
     if np.any(selected.astype(np.float64) / fps >= segment_stop):
