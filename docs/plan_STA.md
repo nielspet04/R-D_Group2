@@ -26,58 +26,109 @@ The current split contains:
 | Train | 59,767 | 58,895 | 796 | 76 |
 | Validation | 7,450 | 7,307 | 119 | 24 |
 
-## Current progress — 10 November 2026
+## Current progress — 12 November 2026
 
-The first cached-feature handoff work has started:
+### Cached features and models
 
 - The version 1 feature-shard agreement is documented in
-  [`docs/sta_feature_shard_contract.md`](sta_feature_shard_contract.md).
-- The shared shard validator and save/load helpers are implemented in
-  `src/sta_features.py`.
-- A deterministic eight-event contract shard can be generated with
-  `scripts/create_sta_example_shard.py`. It covers full context, partial context,
-  no context and a video error.
-- Initial automated contract tests are present in `tests/test_sta_features.py`.
-- Emiel added `notebooks/3_sta_feature_shard_smoke_test.ipynb` for the first
-  integration check. It creates the example shard when necessary, loads it through
-  the shared validator, displays its shapes, dtypes, masks, statuses and IDs, checks
-  zero padding and finite values, and converts the stored features from `float16`
-  to training-time `float32`.
-- The feature-shard smoke notebook has been run successfully with the `rd_lab`
-  PyTorch kernel against the deterministic eight-event contract shard.
-- Emiel added `notebooks/4_sta_masked_mean_pool_smoke_test.ipynb` to prototype
-  Model 1. It loads the validated contract shard, performs masked mean pooling,
-  checks the verb and noun output shapes, proves padded features cannot affect
-  predictions, verifies all-false masks produce a finite zero representation and
-  confirms that the combined cross-entropy loss can backpropagate.
-- Model 1 is implemented as `MaskedMeanPoolSTA` in `src/sta_model_1.py`. It
-  averages only valid `[5, 512]` segment features, applies dropout and produces
-  separate 97-class verb and 300-class noun logits.
-- Permanent Model 1 unit tests are implemented in `tests/test_sta_model_1.py`.
-  All seven tests pass in `rd_lab`; they cover output shapes, masked averaging,
-  padding isolation, all-false masks, finite gradients, feature-size validation
-  and boolean-mask validation.
-- Model 2 is implemented as `MaskedGRUSTA` in `src/sta_model_2.py`. It uses
-  one chronological `GRUCell` with hidden size 512, preserves the hidden state
-  on invalid segments and produces separate verb and noun logits.
-- Permanent Model 2 tests are implemented in `tests/test_sta_model_2.py`.
-  All 14 tests pass in `rd_lab`; they cover output shapes and finite values,
-  exactly zero all-false representations, leading and middle padding,
-  isolation from invalid feature values, chronological order sensitivity,
-  finite gradients with all-false events excluded from the loss, and input
-  and constructor validation.
-- The complete unit-test suite passes: 28 tests, including all seven Model 1
-  tests. Model 2 was tested directly; notebook 5 was intentionally skipped.
-- The Model 2 implementation and tests are currently untracked on `STA_dev`;
-  they have not been committed. The latest commit remains `c37b6fb`.
+  [`docs/sta_feature_shard_contract.md`](sta_feature_shard_contract.md), with
+  shared validation and atomic shard save/load helpers in `src/sta_features.py`.
+- Niels's `STAFeatureDataset` is now implemented in `src/sta_features.py`. It
+  reads manifest-backed validated shards lazily, retains metadata and labels, and
+  converts stored `float16` features to training-time `float32`. The trainer uses
+  this shared dataset directly; no temporary competing shard adapter is needed.
+- `scripts/create_sta_example_shard.py` still provides the deterministic
+  eight-event contract shard covering full, partial, no-context and video-error
+  events. The feature-shard smoke notebook has passed against this contract.
+- Model 1 is implemented as `MaskedMeanPoolSTA` in `src/sta_model_1.py`, with
+  seven permanent unit tests covering masking, padding isolation, all-false
+  events, gradients and input validation.
+- Model 2 is implemented as `MaskedGRUSTA` in `src/sta_model_2.py`, with 14
+  permanent unit tests covering masked recurrent updates, chronological order,
+  padding isolation, gradients and input validation.
+- Notebook 5 remains intentionally skipped. Model 2 is tested directly through
+  its permanent unit tests.
 
-The feature-shard notebook still needs to be pointed at the agreed real eight-event
-shard from Niels when it becomes available. Emiel's next implementation task is
-the shared trainer for Models 1 and 2, using synthetic shards while waiting for
-Niels's real features. Reuse the existing evaluation utilities where needed for
-validation and best-checkpoint selection; the standalone evaluation pipeline
-remains a subsequent task. Coordinate any temporary shard-loading adapter with
-Niels, who owns `STAFeatureDataset`, rather than building a competing data pipeline.
+### Shared training and validation core
+
+- `src/sta_training.py` now contains one shared configuration and training core
+  for `mean_pool` and `gru`. The fixed baseline defaults are seed `42`, AdamW,
+  learning rate `0.001`, weight decay `0.0001`, train batch size `256`, validation
+  batch size `512`, at most 30 epochs, early-stopping patience `5`, dropout `0.3`
+  and gradient clipping at `1.0`.
+- The training boundary explicitly converts features to `float32`. Full and
+  partial events contribute combined verb and noun cross-entropy, while all-false
+  events remain counted but are excluded from both losses. A batch with no usable
+  context skips the forward pass and optimizer update entirely, preventing AdamW
+  weight decay or optimizer state from changing the model without evidence.
+- Shared validation runs under inference mode, applies separate verb and noun
+  softmax operations for usable events and substitutes Model 0 frequency-prior
+  probabilities for all-false events. Every validation row remains represented,
+  including `no_context` and `video_error` events.
+- Validation reuses `src/evaluation.py` to report verb, noun and valid joint-action
+  Top-1, Top-5 and MT5R. Joint-action scores use `P(verb) * P(noun)`, and validation
+  Action MT5R is the checkpoint-selection metric.
+- `tests/test_sta_training.py` contains six focused tests. They prove that
+  no-context labels cannot affect loss, empty-context batches do not update either
+  architecture, usable batches update both architectures, `float16` inputs reach
+  the models as `float32`, validation retains fallback events, and checkpoint
+  save/reload reproduces predictions and optimizer state.
+
+### Checkpoints and experiment orchestration
+
+- Checkpoints are saved atomically and contain a schema version, model state,
+  AdamW state, epoch, seed, full configuration, validation metrics, Git commit
+  hash and an accurate dirty-working-tree flag. Loading can inspect metadata or
+  restore both model and optimizer for resumed training.
+- Git provenance is collected with read-only Git commands and includes untracked
+  files in the dirty-tree check. This prevents an uncommitted experiment from
+  being presented as fully reproducible from its commit hash alone.
+- `src/sta_trainer.py` now owns experiment-level orchestration so that
+  `src/sta_training.py` remains focused on reusable single-epoch operations. It
+  runs training and validation, selects strictly improving Action MT5R, applies
+  patience-based early stopping, writes history after every completed epoch and
+  restores the selected best checkpoint before returning.
+- The orchestrator writes the planned artifacts under the supplied result root:
+  `checkpoints/<model>/best.pt`, `logs/<model>/history.csv`,
+  `tables/<model>_validation.json` and `configs/<model>.json`.
+- `tests/test_sta_trainer.py` supplies a controlled MT5R sequence and proves that
+  the best epoch is retained, worse epochs do not replace it, patience stops at
+  the expected point, all four artifacts are written and the returned model is
+  restored to the best rather than final epoch.
+
+### Training entry point
+
+- `scripts/train_sta.py` trains either `mean_pool` or `gru` directly from the
+  shared `STAFeatureDataset`. It retains the fixed `TrainingConfig` defaults,
+  fits the Model 0 fallback from training-shard labels only, and builds valid
+  action pairs from the complete supplied annotation CSV in the same way as the
+  Model 0 evaluator.
+- Training uses a deterministic shard-aware batch sampler. Each epoch randomizes
+  shard order and event order within each shard with seed 42, but no batch spans
+  two shards. Validation remains sequential. This preserves event randomness
+  without thrashing the dataset's one-shard cache.
+- The CLI accepts the model, feature root, annotation path, output root and
+  device. `--smoke-test-epochs` is the only baseline override and is explicitly
+  limited to small correctness checks.
+- `tests/test_train_sta.py` creates independent contract-valid train and
+  validation shard trees. The validation fixture covers full, partial and
+  all-false masks, and the end-to-end test runs both architectures for one smoke
+  epoch, checks fallback accounting and all four output artifacts, and reloads
+  both checkpoints.
+
+### Verification and next work
+
+- All 15 focused loader/training/orchestration/entry-point tests pass in
+  `rd_lab`.
+- The complete repository suite passes: 69 tests in total.
+- The latest committed and pushed Git commit visible during this update is
+  `568d1f3`. The training entry point, its integration tests and this plan update
+  remain uncommitted as requested.
+- No standalone training run or performance experiment has been executed. The
+  small synthetic integration fixtures establish correctness, not model
+  performance.
+- Video extraction, VSC jobs, submission generation and the standalone evaluation
+  command remain later tasks and have not been started.
 
 ## 1. Build and validate the shared STA feature pipeline
 
