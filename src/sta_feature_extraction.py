@@ -139,6 +139,68 @@ def sample_segment_frames(
         capture.release()
 
 
+def prepare_event_frames(
+        video_path: Path,
+        action_start: float,
+) -> tuple[list[np.ndarray], list[int], list[bool], str]:
+    """Read an event with one capture and one seek, retaining only sampled RGB frames.
+
+    Each segment keeps its original ordered indices, including repeats. Captures
+    belong to this call, so concurrent event workers never share decoder state.
+    """
+    boundaries, mask_values = sta_segment_boundaries(action_start)
+    positions = [position for position, valid in enumerate(mask_values) if valid]
+    if not positions:
+        return [], [], mask_values, "no_context"
+
+    import cv2
+
+    video_path = Path(video_path)
+    capture = cv2.VideoCapture(str(video_path))
+    try:
+        if not capture.isOpened():
+            raise RuntimeError(f"failed to open video file {video_path}")
+        fps = float(capture.get(cv2.CAP_PROP_FPS))
+        total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        segment_indices = []
+        for position in positions:
+            start, stop = boundaries[position]
+            indices = sample_segment_indices(
+                fps=fps,
+                segment_start=start,
+                segment_stop=stop,
+                frame_count=16,
+                total_video_frames=total_frames,
+            )
+            cutoff = action_start - 1.0
+            if np.any(indices.astype(np.float64) / fps >= cutoff):
+                raise RuntimeError(
+                    f"selected frame indices exceed cutoff {cutoff}: {indices}"
+                )
+            segment_indices.append(indices)
+
+        requested = np.unique(np.concatenate(segment_indices))
+        first, last = int(requested[0]), int(requested[-1])
+        if not capture.set(cv2.CAP_PROP_POS_FRAMES, first):
+            raise RuntimeError(f"failed to seek to frame {first} in {video_path}")
+        requested_set = set(requested.tolist())
+        frames_by_index = {}
+        for frame_index in range(first, last + 1):
+            success, frame = capture.read()
+            if not success:
+                raise RuntimeError(f"failed to read frame {frame_index} from {video_path}")
+            if frame_index in requested_set:
+                frames_by_index[frame_index] = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frames = [
+            np.stack([frames_by_index[int(index)] for index in indices])
+            for indices in segment_indices
+        ]
+        status = "full" if len(positions) == 5 else "partial"
+        return frames, positions, mask_values, status
+    finally:
+        capture.release()
+
+
 def build_r3d18_feature_extractor(device:str):
     # creating the frozen r3d-18 model for feature extraction
     import torch.nn as nn
@@ -186,24 +248,10 @@ def extract_event_features(
 ):
     # extract r3d-18 features from the observation window of a single event
     import torch
-    boundaries, mask_values = sta_segment_boundaries(action_start)
-    valid_frames: list[np.ndarray] = []
-    valid_positions: list[int] = []
     try:
-        for position, ((start, stop), valid) in enumerate(zip(boundaries, mask_values)):
-            if not valid:
-                continue
-            frames, indices, fps = sample_segment_frames(
-                video_path,
-                start,
-                stop,
-                frame_count=16,
-            )
-            cutoff = action_start - 1.0
-            if np.any(indices.astype(np.float64) / fps >= cutoff):
-                raise RuntimeError(f"selected frame indices exceed cutoff: {indices} at {fps} fps for segment [{start}, {stop}) with cutoff {cutoff}")
-            valid_frames.append(frames)
-            valid_positions.append(position)
+        valid_frames, valid_positions, mask_values, status = prepare_event_frames(
+            video_path, action_start
+        )
 
         features = torch.zeros((5,512), dtype=torch.float32)
         valid_mask = torch.tensor(mask_values, dtype=torch.bool)
@@ -216,14 +264,6 @@ def extract_event_features(
                 device,
             )
             features[valid_positions] = encoded
-        valid_count = int(valid_mask.sum().item())
-
-        if valid_count == 5:
-            status = "full"
-        elif valid_count > 0:
-            status = "partial"
-        else:
-            status = "no_context"
         return features, valid_mask, status
     except (RuntimeError, OSError):
         return (
@@ -253,35 +293,10 @@ def extract_event_batch(
         raise ValueError(f"workers must be non-negative, got {workers}")
     def prepare_event(arguments):
         video_path, action_start = arguments
-        boundaries, mask_values = sta_segment_boundaries(action_start)
-
-        event_frames: list[np.ndarray] = []
-        segment_positions: list[int] = []
-
+        # Validate the event time before applying the existing video-error policy.
+        sta_segment_boundaries(action_start)
         try:
-            for position, ((start, stop), valid) in enumerate(zip(boundaries, mask_values)):
-                if not valid:
-                    continue
-                frames, indices, fps = sample_segment_frames(
-                    video_path,
-                    start,
-                    stop,
-                    frame_count=16,
-                )
-                cutoff = action_start - 1.0
-                if np.any(indices.astype(np.float64) / fps >= cutoff):
-                    raise RuntimeError(f"selected frame indices exceed cutoff: {indices} at {fps} fps for segment [{start}, {stop}) with cutoff {cutoff}")
-                event_frames.append(frames)
-                segment_positions.append(position)
-            valid_count = sum(mask_values)
-            if valid_count == 5:
-                status = "full"
-            elif valid_count > 0:
-                status = "partial"
-            else:
-                status = "no_context"
-            
-            return event_frames, segment_positions, mask_values, status
+            return prepare_event_frames(video_path, action_start)
         except (RuntimeError, OSError, ValueError):
             return [], [], [False] * 5, "video_error"
     arguments = list(zip(video_paths, action_starts))
