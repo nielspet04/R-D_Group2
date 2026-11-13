@@ -85,3 +85,7 @@ The full folder is portable. Do not share only the HTML. The project footage ret
 ## Latest revision — 13 November 2026
 
 The motivation now states AR and STA research questions. The evidence slide includes video-input lessons and the queued training-set feature extraction reported by Niels. The next-step table assigns Niels and Emiel concrete actions and success checks. See `ar-handoff.md` for the remaining AR fields; the deck remains a draft until those are filled.
+
+## Team speaking guide
+
+Zoe handles AR; Niels handles STA features; Emiel handles STA models. Each slide’s notes now identify the speaker and planned time. `team-speaking-notes.md` contains all scripts and handoffs; `my-speaking-notes.md` contains only Niels’s parts. Keep them separately for PDF delivery.

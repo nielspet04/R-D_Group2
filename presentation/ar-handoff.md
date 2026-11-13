@@ -1,4 +1,4 @@
-# AR teammate — finish these fields before submission
+# Zoe — finish these fields before submission
 
 The deck reserves two main AR slides plus one next-step row. There are no verified AR model results in this workspace; all bracketed AR fields need real input.
 
@@ -13,6 +13,8 @@ Enter the actual validation split, metric and measured baseline/model scores. Us
 ## Slide 10: next step
 
 Replace the AR row with the next controlled experiment and how it will be evaluated. Set the owner’s name if known. Put the spoken explanation into slide notes using plain, short sentences.
+
+Zoe presents slides 1, 2, 4 and 5, the AR next step and the closing on slide 10. See `team-speaking-notes.md` for exact handoff cues.
 
 ## Final pass
 
