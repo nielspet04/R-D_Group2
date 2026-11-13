@@ -57,6 +57,22 @@ The downloader stores the videos under
 `data/raw/EPIC-KITCHENS/videos_640x360/`. Existing files are skipped. Store the
 provided annotation CSV files under `data/raw/EPIC-KITCHENS/annotations/`.
 
+To fetch a repaired ManGO collection into a separate VSC scratch directory:
+
+```bash
+python scripts/download_kitchen_mango.py \
+  --output-dir "$VSC_SCRATCH/epic_sta/raw_fixed"
+```
+
+Use `--overwrite` to refresh existing files in the chosen destination. Downloads
+are staged, checked against the remote object size, and renamed into place only
+after a complete transfer. The size check does not validate video decoding or
+prove that the ManGO source has been repaired. Interrupted downloads can be retried.
+Point extraction's `--raw-dir` at the new directory. Keep the annotations, split
+and feature output root unchanged when retrying existing failed shards with
+`--resume`. This reuse assumes the repaired dataset retains the same video IDs,
+timing and preprocessing; a changed video definition needs separate feature outputs.
+
 ## Working conventions
 
 - Name notebooks in execution order, for example
