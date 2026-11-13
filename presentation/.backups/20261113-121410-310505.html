@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Understanding actions. Anticipating what comes next.</title>
+<link rel="stylesheet" href="vendor/dist/reveal.css"><link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="tools" aria-label="Presentation tools"><button id="edit">Edit text · E</button><button id="save">Download HTML backup</button><span id="save-status" role="status" aria-live="polite">Connecting autosave…</span><button id="pdf">PDF view</button><span>← → slides · S speaker view · F fullscreen · ? help</span></div>
+<div class="reveal"><div class="slides">
+<section data-name="Opening" data-seconds="40">
+ <div class="eyebrow">R&D EXPERIENCE · HCVISION · GROUP 2 · 13 NOVEMBER 2026</div>
+ <div class="opening">
+  <div><h1 data-edit data-edit-id="e000">What are we doing?<br><em>What comes next?</em></h1><p class="lead" data-edit data-edit-id="e001">Action recognition & short-term action anticipation</p><p class="small" data-edit data-edit-id="e002">EPIC-KITCHENS-100 · Mid-term presentation</p><p class="small team-credit" data-edit data-edit-id="e003"><b>Zoe</b> · AR<br><b>Niels</b> · STA features &nbsp; <b>Emiel</b> · STA models</p></div>
+  <div class="media opening-media"><video controls muted playsinline preload="auto" poster="assets/context.jpg" src="assets/context.mp4"></video><div class="caption">Context ends one second before the action.</div><div class="answer"><span class="sta">Next action</span><strong>take soy milk</strong></div></div>
+ </div>
+ <div class="source">Footage: EPIC-KITCHENS-100 [1], P01_03_5. Context ends 1 s before the annotated action.</div>
+ <aside class="notes">
+<p><strong>Zoe · 0:00–0:40</strong></p>
+<p>Our project asks two questions: what is someone doing, and what will they do next?</p>
+<p>I worked on action recognition. Niels prepares the video features for anticipation, and Emiel builds and trains the anticipation models.</p>
+<p>Recognition looks at the action itself. Anticipation only looks at what happens before it.</p>
+</aside>
+</section>
+<section data-name="Motivation" data-seconds="40">
+ <div class="eyebrow">MOTIVATION & RESEARCH QUESTIONS</div><h2 data-edit data-edit-id="e004">Understanding actions<br>for timely assistance</h2>
+ <p class="lead wide" data-edit data-edit-id="e005">Predict the next cooking step to offer instructions at the right time.</p>
+ <div class="twocol motivation research-questions"><div><span class="task ar">AR</span><h3 data-edit data-edit-id="e006">What is happening now?</h3><p data-edit data-edit-id="e007">Recognize the current verb–noun action from a clip.</p></div><div><span class="task sta">STA</span><h3 data-edit data-edit-id="e008">What happens next?</h3><p data-edit data-edit-id="e009">Does video context help prediction?<br>Does temporal modelling help?</p></div></div>
+ <p class="bottom-note" data-edit data-edit-id="e010">Vision: assistants that understand and anticipate everyday actions.</p>
+ <aside class="notes">
+<p><strong>Zoe · 0:40–1:20</strong></p>
+<p>Imagine a cooking assistant that understands what you are doing. Predicting the next action could help it give the next instruction at the right time.</p>
+<p>For AR, we ask how well we can recognize the current action. For STA, we ask whether video helps predict the next action, and whether time order helps further.</p>
+<p>Emiel will briefly explain the related work.</p>
+</aside>
+</section>
+<section data-name="Related work" data-seconds="50">
+ <div class="eyebrow">RELATED WORK</div><h2 data-edit data-edit-id="e011">Three foundations for our approach.</h2>
+ <div class="literature"><article><div class="refnum">01</div><h3 data-edit data-edit-id="e012">Egocentric actions</h3><p data-edit data-edit-id="e013">EPIC-KITCHENS-100: verb–noun labels and recognition / anticipation benchmarks.</p><div class="small">Damen et al., IJCV 2022 [1]</div></article><article><div class="refnum">02</div><h3 data-edit data-edit-id="e014">Video representations</h3><p data-edit data-edit-id="e015">Pretrained R3D-18 extracts our STA video features.</p><div class="small">TorchVision R3D-18 [2]</div></article><article><div class="refnum">03</div><h3 data-edit data-edit-id="e016">Temporal anticipation</h3><p data-edit data-edit-id="e017">RU-LSTM uses past context to anticipate future actions.</p><div class="small">Furnari & Farinella, ICCV 2019 [3]</div></article></div>
+ <p class="bottom-note" data-edit data-edit-id="e018">Our simpler starting point: frequency prior → pooling → GRU.</p>
+ <aside class="notes">
+<p><strong>Emiel · 1:20–2:10</strong></p>
+<p>EPIC-KITCHENS gives us first-person videos with action labels.</p>
+<p>For STA, we use a pretrained video network to extract features. Earlier work, such as RU-LSTM, uses the order of events to predict what comes next.</p>
+<p>We start with a simpler comparison: averaging the features or using a GRU.</p>
+<p>Zoe will now explain action recognition.</p>
+</aside>
+</section>
+<!-- AR SECTION: edit the marked text in your browser (E), or edit this HTML. No AR results are asserted. -->
+<section data-name="AR method" data-seconds="65" class="ar-section">
+ <div class="eyebrow ar">ACTION RECOGNITION</div><h2 data-edit data-edit-id="e019">What action is happening?</h2>
+ <div class="twocol ar-method"><div class="media"><video controls muted playsinline preload="auto" src="assets/action.mp4" poster="assets/action.jpg"></video><div class="caption">Annotated action clip · example label: take soy milk [1]</div></div><div><p class="lead" data-edit data-edit-id="e020">Observe the action clip.<br>Predict verb + noun.</p><div class="method-line" data-edit data-edit-id="e021">Action clip → AR model → verb + noun</div><h3 class="edit-label" data-edit data-edit-id="e022">VideoMAE ViT-B, fine-tuned</h3><p data-edit data-edit-id="e023"><div>Model: VideoMAE ViT-B + verb head (97) and noun head (300)</div><div>Input: 16 frames, TSN-style sampling, 224 × 224</div><div>Training: AdamW, 10 epochs, best epoch 7</div></p></div></div>
+ <div class="source">Example P01_03_5, 13.57–14.56 s. This is a ground-truth illustration, not an AR model output.</div>
+ <aside class="notes">
+<p><strong>Zoe · 2:10–3:15</strong></p>
+<p>For action recognition, the model sees the action itself and predicts a verb and a noun.</p>
+<p>Our model is [AR model name]. We use [input and training setup].</p>
+</aside>
+</section>
+<section data-name="AR evidence" data-seconds="65" class="ar-section">
+ <div class="eyebrow ar">ACTION RECOGNITION · PRELIMINARY EVIDENCE</div><h2 data-edit data-edit-id="e024">AR results & findings</h2>
+ <p class="lead" data-edit data-edit-id="e025">Validation comparison · Zoe to complete</p>
+ <table class="results editable-table"><thead><tr><th data-edit data-edit-id="e026">Experiment</th><th data-edit data-edit-id="e027">Metric & split</th><th data-edit data-edit-id="e028">Measured result</th></tr></thead><tbody><tr><td data-edit data-edit-id="e029">Baseline / reference<br>(Frequency prior)</td><td data-edit data-edit-id="e030">Top-1 / Top-5, participant-split validation</td><td data-edit data-edit-id="e031"><div>Top-1: V 19.6 · N 5.8 · A 3.0</div><div>Top-5: V 58.9 · N 17.1 · A 9.3</div></td></tr><tr><td data-edit data-edit-id="e032">Current AR model</td><td data-edit data-edit-id="e033">Top-1 / Top-5, participant-split validation</td><td data-edit data-edit-id="e034"><div>Top-1: V 56.9 · N 38.6 · A 27.8</div><div>Top-5: V 83.4 · N 63.6 · A 46.3</div></td></tr></tbody></table>
+ <div class="twocol compact"><div><h3 data-edit data-edit-id="e035">Main finding</h3><p data-edit data-edit-id="e036">Fine-tuned VideoMAE reaches 27.8% action Top-1. Verbs (56.9%) are easier than nouns (38.6%), and Top-5 is far higher than Top-1, so many errors are near misses.</p></div><div><h3 data-edit data-edit-id="e037">Current limitation</h3><p data-edit data-edit-id="e038">Rare classes (fewer than 10 training clips) score 0%, and put-on / put-into / take are often confused.</p></div></div>
+ <aside class="notes">
+<p><strong>Zoe · 3:15–4:20</strong></p>
+<p>[AR baseline score, current model score and main finding.]</p>
+<p>Niels will now explain how we prepare the videos for anticipation.</p>
+</aside>
+</section>
+<section data-name="STA protocol" data-seconds="55">
+ <div class="eyebrow sta">SHORT-TERM ACTION ANTICIPATION · EXPERIMENTAL SETUP</div><h2 data-edit data-edit-id="e039">Evaluate on people<br>excluded from training.</h2>
+ <div class="split-numbers"><div><strong>26</strong><span>training participants</span><small>59,767 events</small></div><div><strong>6</strong><span>validation participants</span><small>7,450 events</small></div></div>
+ <p class="lead" data-edit data-edit-id="e040">Fixed participant split · seed 42 · no participant overlap</p><p class="body-width" data-edit data-edit-id="e041">Class-mean Top-5 recall: equal weight for each class present in validation.</p>
+ <div class="source">STA project split, not the official benchmark split. Source: project notes, §§2 & 4 [4]. AR split must be confirmed separately.</div>
+ <aside class="notes">
+<p><strong>Niels · 4:20–5:15</strong></p>
+<p>I prepare the video data for Emiel’s models.</p>
+<p>We agreed on one saved feature format. This let me build the extraction while Emiel worked on the models using test features.</p>
+<p>We split the data by person: 26 people for training and six for validation. This checks how the models work on people they have not seen during training.</p>
+<p>All STA models use the same split. Our main score gives each action class the same weight.</p>
+</aside>
+</section>
+<section data-name="STA timing" data-seconds="65">
+ <div class="eyebrow sta">STA · OBSERVATION RULE</div><h2 data-edit data-edit-id="e042">Predict before the action starts.</h2>
+ <p class="lead" data-edit data-edit-id="e043">Five seconds of context. One second without observation.</p>
+ <div class="timeline" role="img" aria-label="Five one-second observation segments from t minus 6 to t minus 1, followed by a one-second forbidden gap before the target action at t."><div class="observation"><span>−6</span><span>−5</span><span>−4</span><span>−3</span><span>−2</span></div><div class="gap">−1</div><div class="target">t</div><div class="obslabel">Observed context · five 1 s segments</div><div class="gaplabel">1 s gap</div><div class="targetlabel">Target action</div></div>
+ <div><p class="statement" data-edit data-edit-id="e044">Every sampled frame must be earlier than t − 1.</p><p data-edit data-edit-id="e045">16 frames / segment → frozen R3D-18 → 5 × 512 features + validity mask.</p></div>
+ <div class="source">Nominal observation window: [t − 6, t − 1). 16 sampled frames per valid segment. Project notes, §3 [4].</div>
+ <aside class="notes">
+<p><strong>Niels · 5:15–6:20</strong></p>
+<p>We use five seconds of video and stop one second before the action starts.</p>
+<p>For an action at 20 seconds, we use video from 14 seconds up to, but not including, 19 seconds.</p>
+<p>I split this into five one-second parts and take 16 frames from each.</p>
+<p>A pretrained network called R3D-18 turns each part into 512 numbers. I do not train this network again.</p>
+<p>I mark missing parts with a mask and save the features so we only do this work once.</p>
+<p>Emiel will explain how his models use these features.</p>
+</aside>
+</section>
+<section data-name="STA models" data-seconds="65">
+ <div class="eyebrow sta">STA · METHOD</div><h2 data-edit data-edit-id="e046">Does temporal order help?</h2>
+ <div class="pipeline" data-edit data-edit-id="e047">5 video segments → frozen R3D-18 → 5 × 512 features + mask</div>
+ <table class="model-table"><thead><tr><th>Model</th><th>What it uses</th><th>Question</th></tr></thead><tbody><tr><td data-edit data-edit-id="e048"><b>M0</b> Frequency prior</td><td data-edit data-edit-id="e049">Training label frequencies only</td><td data-edit data-edit-id="e050">Frequency alone?</td></tr><tr><td data-edit data-edit-id="e051"><b>M1</b> Masked mean pooling</td><td data-edit data-edit-id="e052">Valid features, averaged</td><td data-edit data-edit-id="e053">Does video help?</td></tr><tr><td data-edit data-edit-id="e054"><b>M2</b> Masked GRU</td><td data-edit data-edit-id="e055">Valid features in time order</td><td data-edit data-edit-id="e056">Does temporal modelling help?</td></tr></tbody></table>
+ <p class="bottom-note" data-edit data-edit-id="e057">Verb + noun outputs. M1 / M2 implemented and tested; full training still ahead.</p>
+ <div class="source">R3D-18 pretrained weights: TorchVision [2]. STA design: project notes [4] and STA implementation plan [5].</div>
+ <aside class="notes">
+<p><strong>Emiel · 6:20–7:25</strong></p>
+<p>We compare three models. The first only uses how often labels appear in the training data.</p>
+<p>The second averages the valid video features. The third uses a GRU to process them in time order.</p>
+<p>My part is building the models, training them, and checking their scores. Both video models use the same features from Niels.</p>
+<p>The code is ready and tested. We still need to train the video models on the full feature set and compare the results.</p>
+</aside>
+</section>
+<section data-name="STA evidence" data-seconds="75">
+ <div class="eyebrow sta">STA · MEASURED EVIDENCE</div><h2 data-edit data-edit-id="e058">A measured baseline.<br>Validation features extracted.</h2>
+ <div class="twocol evidence"><div><h3 data-edit data-edit-id="e059">M0 · class-mean Top-5 recall</h3><table class="results"><thead><tr><th>Verb</th><th>Noun</th><th>Action</th></tr></thead><tbody><tr><td data-edit data-edit-id="e060">6.94%</td><td data-edit data-edit-id="e061">2.87%</td><td data-edit data-edit-id="e062">0.274%</td></tr></tbody></table><p data-edit data-edit-id="e063">Frequency-only baseline for the video models.</p><div class="small">7,450 validation events · project participant split</div></div><div class="smoke"><h3 data-edit data-edit-id="e064">Validation extraction complete</h3><p class="big-stat" data-edit data-edit-id="e065">4 <span>feature shards</span></p><p class="large-detail" data-edit data-edit-id="e066">7,450 validation events</p><p data-edit data-edit-id="e067">Missing local videos → corrected test inputs<br>Corrupted video → downloaded again</p></div></div>
+ <p class="bottom-note" data-edit data-edit-id="e068">Validation features: complete. Training-feature extraction: queued.</p>
+ <div class="source">M0: project notes [4]. Validation completion (4 shards): Niels’s update, 13 Nov 2026. Validation split: 7,450 events.</div>
+ <aside class="notes">
+<p><strong>Emiel · 7:25–7:55</strong></p>
+<p>Our first model scores 6.94 percent for verbs, 2.87 percent for nouns, and about 0.27 percent for full actions. These are our starting scores.</p>
+<p>Niels will explain the completed validation extraction.</p>
+<p><strong>Niels · 7:55–8:40</strong></p>
+<p>The validation feature extraction is now finished. The validation set has 7,450 actions, saved in four files called shards.</p>
+<p>Saving in separate files means we can reuse completed parts if a later extraction job stops.</p>
+<p>I had some video errors during development. I fixed the local test inputs and downloaded one corrupted video again.</p>
+<p>Training-set feature extraction is now queued. Once that is ready, Emiel can train the video models.</p>
+</aside>
+</section>
+<section data-name="Next steps" data-seconds="50">
+ <div class="eyebrow">NEXT STEPS · CONTROLLED EXPERIMENTS</div><h2 data-edit data-edit-id="e069">Next steps: improve the results</h2>
+ <table class="roadmap"><thead><tr><th>Who</th><th>Focus</th><th>Experiments</th></tr></thead><tbody>
+ <tr><td data-edit data-edit-id="e070">Niels</td><td data-edit data-edit-id="e071">Improve the video input</td><td data-edit data-edit-id="e072">Frame sampling / context length</td></tr>
+ <tr><td data-edit data-edit-id="e073">Emiel</td><td data-edit data-edit-id="e074">Tune pooling + GRU</td><td data-edit data-edit-id="e075">Learning rate, dropout,<br>class-balanced loss</td></tr>
+ <tr><td data-edit data-edit-id="e076">Niels + Emiel</td><td data-edit data-edit-id="e077">impl</td><td data-edit data-edit-id="e078">Stronger features / fine-tuning<br>if the error analysis supports it</td></tr>
+ <tr><td data-edit data-edit-id="e079">Zoe</td><td data-edit data-edit-id="e080">8 vs 16 frames; fine-tuning;<br>weighted loss</td><td data-edit data-edit-id="e081">Action Top-1 vs 16-frame baseline;<br>same validation split + seed</td></tr>
+ </tbody></table>
+ <p class="closing" data-edit data-edit-id="e082">STA goal: improve validation Action MT5R on the same split.</p>
+ <div class="source">First: full pooling / GRU results. Then change one factor at a time; keep the 1 s anticipation gap.</div>
+ <aside class="notes">
+<p><strong>Zoe · 8:40–8:50</strong></p>
+<p>For AR, I will test frame count, fine-tuning and weighted loss against the sixteen-frame baseline.</p>
+<p><strong>Niels · 8:50–9:00</strong></p>
+<p>For STA, I will test different frame sampling and context lengths to see which video input gives better results.</p>
+<p><strong>Emiel · 9:00–9:20</strong></p>
+<p>I will first train pooling and GRU, then tune the learning rate, dropout and loss. We will look at mistakes to decide whether to try stronger features or fine-tuning. We will keep changes that improve our validation score.</p>
+<p><strong>Zoe · 9:20–9:30</strong></p>
+<p>Our goal is to get the strongest results we can, and understand which changes help. Thank you.</p>
+</aside>
+</section>
+<section data-name="References" data-seconds="0" data-visibility="uncounted" class="references">
+ <div class="eyebrow">REFERENCES · BACKUP</div><h2>Sources</h2>
+ <ol><li><b>Damen et al. (2022).</b> Rescaling Egocentric Vision: Collection, Pipeline and Challenges for EPIC-KITCHENS-100. <i>IJCV, 130</i>, 33–55.<br><a href="https://doi.org/10.1007/s11263-021-01531-2">doi.org/10.1007/s11263-021-01531-2</a></li><li><b>TorchVision.</b> R3D-18 model and Kinetics-400 pretrained weights documentation.<br><a href="https://docs.pytorch.org/vision/main/models/generated/torchvision.models.video.r3d_18.html">docs.pytorch.org/vision · r3d_18</a></li><li><b>Furnari & Farinella (2019).</b> What Would You Expect? Anticipating Egocentric Actions with Rolling-Unrolling LSTMs and Modality Attention. <i>ICCV</i>.<br><a href="https://iplab.dmi.unict.it/legacy/rulstm/">iplab.dmi.unict.it/legacy/rulstm</a></li><li><b>Project team (12 Nov 2026).</b> Milestones 1–10 — Implementation and Presentation Notes; STA Model 0 evaluation JSON. Internal project evidence.</li><li><b>Project team (12 Nov 2026).</b> STA Models 1 and 2 Full Implementation and VSC Training Plan. Internal implementation status and team responsibilities (<code>docs/plan_STA.md</code>).</li></ol>
+ <aside class="notes">
+
+</aside>
+</section>
+<section data-name="Metric details" data-seconds="0" data-visibility="uncounted">
+ <div class="eyebrow">BACKUP · EVALUATION</div><h2>M0: the complete metric picture</h2><table class="results"><thead><tr><th>Metric</th><th>Verb</th><th>Noun</th><th>Action</th></tr></thead><tbody><tr><td>Top-1 accuracy</td><td>19.56%</td><td>5.72%</td><td>0.00%</td></tr><tr><td>Class-mean Top-5 recall</td><td>6.94%</td><td>2.87%</td><td>0.274%</td></tr></tbody></table><p>Action scores: P(verb) × P(noun), ranked over 3,568 known verb–noun pairs.</p><p>Class-mean recall averages per-class recall over classes present in validation.</p><div class="source">Project Model 0 evaluation JSON and project notes, §4 [4]. Probabilities estimated only from training labels; action mapping defined from the supplied annotations.</div><aside class="notes">
+<p><strong>Emiel · Q&amp;A</strong></p>
+<p>Top-1 accuracy checks whether the first prediction is correct.</p>
+<p>Class-mean Top-5 recall checks whether the correct label is in the top five, then averages the score across classes.</p>
+</aside>
+</section>
+<section data-name="Edge cases" data-seconds="0" data-visibility="uncounted">
+ <div class="eyebrow">BACKUP · VALIDITY & LIMITATIONS</div><h2>What happens when context is missing?</h2><table class="results"><thead><tr><th>Case</th><th>Representation / policy</th></tr></thead><tbody><tr><td>Full context</td><td>Five valid segment features</td></tr><tr><td>Action near recording start</td><td>Zero features + mask for missing segments</td></tr><tr><td>No usable context</td><td>All-false mask; training-frequency prior during validation</td></tr></tbody></table><p>The 64-event smoke sample contained 62 full-context, 1 partial-context and 1 no-context event.</p><div class="source">Project notes [4]; shared training / validation status in STA plan [5]. Checks validate data handling, not predictive quality.</div><aside class="notes">
+<p><strong>Niels · Q&amp;A</strong></p>
+<p>If an action happens near the start of a video, some context is missing. The mask tells the model which parts are real.</p>
+<p><strong>Emiel · Q&amp;A</strong></p>
+<p>If there is no usable video, we keep the action and use training-label frequencies during validation. We do not use that example to train the video models.</p>
+</aside>
+</section>
+</div></div>
+<script src="vendor/dist/reveal.js"></script><script src="vendor/plugin/notes/notes.js"></script><script src="deck.js"></script>
+</body></html>
