@@ -54,7 +54,7 @@ python scripts/evaluate_sta_model_0.py
 
 started=$SECONDS
 python scripts/extract_sta_features.py \
-  --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
+  --raw-dir "$VSC_SCRATCH/epic_sta/raw_fixed" \
   --split train \
   --output-root results/vsc_a100_smoke_features \
   --device cuda \

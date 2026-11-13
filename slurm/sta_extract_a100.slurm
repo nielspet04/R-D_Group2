@@ -44,7 +44,7 @@ nvidia-smi
 
 started=$SECONDS
 python scripts/extract_sta_features.py \
-  --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
+  --raw-dir "$VSC_SCRATCH/epic_sta/raw_fixed" \
   --split "$SPLIT" \
   --output-root data/processed/sta_features \
   --device cuda \
