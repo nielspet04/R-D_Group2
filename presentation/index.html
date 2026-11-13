@@ -112,19 +112,19 @@
 </aside>
 </section>
 <section data-name="STA evidence" data-seconds="75">
- <div class="eyebrow sta">STA · MEASURED EVIDENCE</div><h2 data-edit data-edit-id="e058">A measured baseline.<br>A verified extraction pipeline.</h2>
- <div class="twocol evidence"><div><h3 data-edit data-edit-id="e059">M0 · class-mean Top-5 recall</h3><table class="results"><thead><tr><th>Verb</th><th>Noun</th><th>Action</th></tr></thead><tbody><tr><td data-edit data-edit-id="e060">6.94%</td><td data-edit data-edit-id="e061">2.87%</td><td data-edit data-edit-id="e062">0.274%</td></tr></tbody></table><p data-edit data-edit-id="e063">Frequency-only baseline for the video models.</p><div class="small">7,450 validation events · project participant split</div></div><div class="smoke"><h3 data-edit data-edit-id="e064">H100 smoke extraction</h3><p class="big-stat" data-edit data-edit-id="e065">64 <span>real events</span></p><p class="large-detail" data-edit data-edit-id="e066">48 s extraction · 0 video errors</p><p data-edit data-edit-id="e067">Missing local videos → corrected test inputs<br>Corrupted video → downloaded again</p></div></div>
- <p class="bottom-note" data-edit data-edit-id="e068">Training-feature extraction: queued. Lesson: check videos before full extraction.</p>
- <div class="source">Measured M0 and H100 results: project notes [4], 12 Nov 2026. Queue status and video repair: Niels’s update, 13 Nov 2026.</div>
+ <div class="eyebrow sta">STA · MEASURED EVIDENCE</div><h2 data-edit data-edit-id="e058">A measured baseline.<br>Validation features extracted.</h2>
+ <div class="twocol evidence"><div><h3 data-edit data-edit-id="e059">M0 · class-mean Top-5 recall</h3><table class="results"><thead><tr><th>Verb</th><th>Noun</th><th>Action</th></tr></thead><tbody><tr><td data-edit data-edit-id="e060">6.94%</td><td data-edit data-edit-id="e061">2.87%</td><td data-edit data-edit-id="e062">0.274%</td></tr></tbody></table><p data-edit data-edit-id="e063">Frequency-only baseline for the video models.</p><div class="small">7,450 validation events · project participant split</div></div><div class="smoke"><h3 data-edit data-edit-id="e064">Validation extraction complete</h3><p class="big-stat" data-edit data-edit-id="e065">4 <span>feature shards</span></p><p class="large-detail" data-edit data-edit-id="e066">7,450 validation events</p><p data-edit data-edit-id="e067">Missing local videos → corrected test inputs<br>Corrupted video → downloaded again</p></div></div>
+ <p class="bottom-note" data-edit data-edit-id="e068">Validation features: complete. Training-feature extraction: queued.</p>
+ <div class="source">M0: project notes [4]. Validation completion (4 shards): Niels’s update, 13 Nov 2026. Validation split: 7,450 events.</div>
  <aside class="notes">
 <p><strong>Emiel · 7:25–7:55</strong></p>
 <p>Our first model scores 6.94 percent for verbs, 2.87 percent for nouns, and about 0.27 percent for full actions. These are our starting scores.</p>
-<p>Niels will explain the extraction test and the video problems.</p>
+<p>Niels will explain the completed validation extraction.</p>
 <p><strong>Niels · 7:55–8:40</strong></p>
-<p>I had some video errors during development. The first local tests used videos that were not on my laptop, so I changed the test data.</p>
-<p>I also found one corrupted video and had to download it again.</p>
-<p>The small GPU test processed 64 actions in 48 seconds, with no video errors.</p>
-<p>Feature extraction for the training set is now queued. This prepares the features; model training comes after that.</p>
+<p>The validation feature extraction is now finished. The validation set has 7,450 actions, saved in four files called shards.</p>
+<p>Saving in separate files means we can reuse completed parts if a later extraction job stops.</p>
+<p>I had some video errors during development. I fixed the local test inputs and downloaded one corrupted video again.</p>
+<p>Training-set feature extraction is now queued. Once that is ready, Emiel can train the video models.</p>
 </aside>
 </section>
 <section data-name="Next steps" data-seconds="50">

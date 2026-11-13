@@ -28,13 +28,13 @@ Emiel will explain how his models use these features.
 
 ## Slide 9 — Niels · 7:55–8:40
 
-I had some video errors during development. The first local tests used videos that were not on my laptop, so I changed the test data.
+The validation feature extraction is now finished. The validation set has 7,450 actions, saved in four files called shards.
 
-I also found one corrupted video and had to download it again.
+Saving in separate files means we can reuse completed parts if a later extraction job stops.
 
-The small GPU test processed 64 actions in 48 seconds, with no video errors.
+I had some video errors during development. I fixed the local test inputs and downloaded one corrupted video again.
 
-Feature extraction for the training set is now queued. This prepares the features; model training comes after that.
+Training-set feature extraction is now queued. Once that is ready, Emiel can train the video models.
 
 ## Slide 10 — Niels · 8:50–9:00
 

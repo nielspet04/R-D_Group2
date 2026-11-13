@@ -98,17 +98,17 @@ The code is ready and tested. We still need to train the video models on the ful
 
 Our first model scores 6.94 percent for verbs, 2.87 percent for nouns, and about 0.27 percent for full actions. These are our starting scores.
 
-Niels will explain the extraction test and the video problems.
+Niels will explain the completed validation extraction.
 
 **Niels · 7:55–8:40**
 
-I had some video errors during development. The first local tests used videos that were not on my laptop, so I changed the test data.
+The validation feature extraction is now finished. The validation set has 7,450 actions, saved in four files called shards.
 
-I also found one corrupted video and had to download it again.
+Saving in separate files means we can reuse completed parts if a later extraction job stops.
 
-The small GPU test processed 64 actions in 48 seconds, with no video errors.
+I had some video errors during development. I fixed the local test inputs and downloaded one corrupted video again.
 
-Feature extraction for the training set is now queued. This prepares the features; model training comes after that.
+Training-set feature extraction is now queued. Once that is ready, Emiel can train the video models.
 
 ## Slide 10 — Next steps
 

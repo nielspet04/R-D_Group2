@@ -98,3 +98,7 @@ Zoe handles AR; Niels handles STA features; Emiel handles STA models. Each slide
 - If you see a save error or “Autosave unavailable”, keep the page open and download a backup. Start the server with `python3 serve.py`; a basic static server cannot accept saves.
 - Browser slide edits save to `index.html`. Speaking-guide Markdown files and the PDF are separate. The PDF is updated only when you export again.
 - The old browser copy was preserved as `.backups/browser-before-autosave.html` when autosave was installed.
+
+## Validation extraction update — 13 November 2026
+
+Niels reports that validation-feature extraction is complete with four shards. Slide 9 now leads with this full-split progress (the validation split contains 7,450 events). Training-feature extraction remains queued. No duration or zero-error claim for the full validation extraction is made without its log. The 64-event H100 run is historical smoke-test evidence.
