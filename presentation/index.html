@@ -16,9 +16,10 @@
  </div>
  <div class="source">Footage: EPIC-KITCHENS-100 [1], P01_03_5. Context ends 1 s before the annotated action.</div>
  <aside class="notes">
-<p><strong>Zoe · 0:00–0:40</strong></p>
+<p><strong>Niels · 0:00–0:40</strong></p>
 <p>Our project asks two questions: what is someone doing, and what will they do next?</p>
-<p>I worked on action recognition. Niels prepares the video features for anticipation, and Emiel builds and trains the anticipation models.</p>
+<p>Zoe worked on action recognition.</p>
+<p>I prepared the video features for anticipation, and Emiel builds and trains the anticipation models.</p>
 <p>Recognition looks at the action itself. Anticipation only looks at what happens before it.</p>
 </aside>
 </section>
@@ -69,16 +70,28 @@
 </aside>
 </section>
 <section data-name="STA protocol" data-seconds="55">
- <div class="eyebrow sta">SHORT-TERM ACTION ANTICIPATION · EXPERIMENTAL SETUP</div><h2 data-edit data-edit-id="e039">Evaluate on people<br>excluded from training.</h2>
- <div class="split-numbers"><div><strong>26</strong><span>training participants</span><small>59,767 events</small></div><div><strong>6</strong><span>validation participants</span><small>7,450 events</small></div></div>
- <p class="lead" data-edit data-edit-id="e040">Fixed participant split · seed 42 · no participant overlap</p><p class="body-width" data-edit data-edit-id="e041">Class-mean Top-5 recall: equal weight for each class present in validation.</p>
- <div class="source">STA project split, not the official benchmark split. Source: project notes, §§2 & 4 [4]. AR split must be confirmed separately.</div>
+ <div class="eyebrow sta">STA · DATA & TEAM HANDOFF</div><h2 data-edit data-edit-id="e039">STA data and feature handoff</h2>
+ <div class="feature-layout">
+  <div><h3>Participant split</h3><div class="split-numbers"><div><strong>26</strong><span>training participants</span><small>59,767 events</small></div><div><strong>6</strong><span>validation participants</span><small>7,450 events</small></div></div>
+   <p class="small">No participant overlap · seed 42</p><p class="feature-metric" data-edit data-edit-id="e041">Class-mean Top-5 recall:<br>equal weight per validation class.</p>
+  </div>
+  <div><h3 data-edit data-edit-id="feature-heading">One record per action</h3>
+   <table class="feature-format"><tbody>
+    <tr><th>Features</th><td data-edit data-edit-id="feature-shape"><b>[5, 512]</b><br>5 segments × 512 numbers</td></tr>
+    <tr><th>Valid mask</th><td data-edit data-edit-id="feature-mask"><b>[5]</b> true / false values</td></tr>
+    <tr><th>Labels + IDs</th><td data-edit data-edit-id="feature-labels">Verb, noun + source event ID</td></tr>
+   </tbody></table>
+  </div>
+ </div>
+ <p class="bottom-note" data-edit data-edit-id="e040">Niels extracts → shared .pt shards → Emiel loads features and trains both models</p>
+ <div class="source">Project participant split [4, 5], not the official benchmark split. Feature format: STA shard contract. AR split is separate.</div>
  <aside class="notes">
 <p><strong>Niels · 4:20–5:15</strong></p>
-<p>I prepare the video data for Emiel’s models.</p>
-<p>We agreed on one saved feature format. This let me build the extraction while Emiel worked on the models using test features.</p>
-<p>We split the data by person: 26 people for training and six for validation. This checks how the models work on people they have not seen during training.</p>
-<p>All STA models use the same split. Our main score gives each action class the same weight.</p>
+<p>I save one record for each action. It contains five feature vectors, each with 512 numbers.</p>
+<p>There are also five true-or-false values called a mask. They show which video parts are available. I save the verb, noun and event ID alongside the features.</p>
+<p>These records are stored in .pt files called shards. Emiel reads them with our shared loader. Agreeing on this format let us work in parallel.</p>
+<p>We use 26 people for training and six different people for validation. This checks how the models work on people they have not seen during training.</p>
+<p>The next slide shows how I create these features.</p>
 </aside>
 </section>
 <section data-name="STA timing" data-seconds="65">
@@ -130,7 +143,7 @@
 <section data-name="Next steps" data-seconds="50">
  <div class="eyebrow">NEXT STEPS · CONTROLLED EXPERIMENTS</div><h2 data-edit data-edit-id="e069">Next steps: improve the results</h2>
  <table class="roadmap"><thead><tr><th>Who</th><th>Focus</th><th>Experiments</th></tr></thead><tbody>
- <tr><td data-edit data-edit-id="e070">Niels</td><td data-edit data-edit-id="e071">Improve the video input</td><td data-edit data-edit-id="e072">Frame sampling / context length</td></tr>
+ <tr><td data-edit data-edit-id="e070">Niels</td><td data-edit data-edit-id="e071">Improve the video input</td><td data-edit data-edit-id="e072">Frame sampling / context length, Potential encoder fine-tuning.</td></tr>
  <tr><td data-edit data-edit-id="e073">Emiel</td><td data-edit data-edit-id="e074">Tune pooling + GRU</td><td data-edit data-edit-id="e075">Learning rate, dropout,<br>class-balanced loss</td></tr>
  <tr><td data-edit data-edit-id="e076">Niels + Emiel</td><td data-edit data-edit-id="e077">Implement RU-LSTM</td><td data-edit data-edit-id="e078">Stronger features / fine-tuning + better model<br></td></tr>
  <tr><td data-edit data-edit-id="e079">Zoe</td><td data-edit data-edit-id="e080">Improve the baseline: long-tail loss; stronger video augmentation; attention-pooling heads</td><td data-edit data-edit-id="e081">Action Top-1 vs. 27.8% baseline (now the AR model); same split + seed</td></tr>
