@@ -15,7 +15,7 @@ The deck opens at http://localhost:8765/. Keep the terminal running. Use the act
 - Left/right arrows or Space: advance (some slides have one reveal step).
 - **S**: speaker window with notes, next slide, and timer. Allow the popup. Use an extended display for private notes.
 - **F**: fullscreen. **Esc**: overview. **?**: shortcuts.
-- Click the video play button on slides 1 and 4. Both clips are local and muted. Do not rely on autoplay.
+- Click the video play button on slides 1 and 4. Both clips are local and muted. These are optional for browser rehearsal. The presenting laptop uses the PDF, which shows still frames; the talk must not depend on playback.
 - Hover the top-right toolbar to access editing and PDF tools. Controls are excluded from PDF.
 - The main talk ends on slide 10. References and technical material follow for Q&A.
 
@@ -57,19 +57,19 @@ Deadline from course notice: **13 November 2026, 15:00 CET**. The 10-minute limi
 
 ## Scientific status and evidence
 
-STA content is grounded in `../docs/milestones_1_to_10_presentation_notes.md` and `../results/tables/sta_model_0_frequency.json`, as recorded on 12 November 2026. No `docs/presentation.md` was present during creation.
+STA content is grounded in `../docs/plan_STA.md` (updated model/trainer status), `../docs/milestones_1_to_10_presentation_notes.md` and `../results/tables/sta_model_0_frequency.json`, as recorded on 12 November 2026. No `docs/presentation.md` was present during creation.
 
 - M0 scores are measured on the project participant split, not the official benchmark.
 - M1 and M2 are implemented and tested, but the source notes do not document full training or comparative performance.
 - The real H100 smoke extraction covered 64 events in 48 seconds with zero video errors; 58 tests passed separately. Do not extrapolate full dataset throughput from this timing.
 - Full validation extraction was submitted and waiting at the source snapshot. Update that status only after verifying a completed log.
-- Frequency-prior fallback for no-context events is planned; full trainer/evaluator integration remains ahead.
+- The updated STA plan and `src/sta_training.py` confirm training/validation fallback integration: no-context events are excluded from loss and use training-frequency scores during validation. Hidden-test submission generation remains ahead.
 - Footage P01_03_5: “take soy milk”, annotated action 13.57–14.56 seconds. Opening context is 7.57–12.57 seconds, ending one second before the action. The revealed answer is ground truth, not a model output.
 - The five-second observation-window diagram is a schematic; features use 16 sampled frames per valid one-second segment.
 
 ## Team rehearsal
 
-See `rehearsal.md` for the timing and handoff plan. Rehearse twice with videos, reveal clicks, all speakers and handoffs. Notes are speaking cues, not a script to read verbatim. Keep everyone involved in Q&A.
+See `rehearsal.md` for the timing and handoff plan, and `sta-preparation.md` for Niels’s script and Q&A. Rehearse twice using the PDF, all speakers and handoffs. Bring speaking cues separately; the presenting laptop has only the PDF. Notes are speaking cues, not a script to read verbatim. Keep everyone involved in Q&A.
 
 ## Files
 
@@ -81,3 +81,7 @@ See `rehearsal.md` for the timing and handoff plan. Rehearse twice with videos, 
 - `rehearsal.md`: team timings
 
 The full folder is portable. Do not share only the HTML. The project footage retains its dataset terms and attribution.
+
+## Latest revision — 13 November 2026
+
+The motivation now states AR and STA research questions. The evidence slide includes video-input lessons and the queued training-set feature extraction reported by Niels. The next-step table assigns Niels and Emiel concrete actions and success checks. See `ar-handoff.md` for the remaining AR fields; the deck remains a draft until those are filled.
