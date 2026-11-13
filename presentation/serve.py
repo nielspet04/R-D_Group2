@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
-"""Start the offline presentation. Run: python3 serve.py"""
-from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+"""Run: python3 serve.py. Browser edits autosave to index.html."""
 from pathlib import Path
-import os, webbrowser, socket
-os.chdir(Path(__file__).resolve().parent)
-url = 'http://localhost:8765/'
-with socket.socket() as probe:
-    if probe.connect_ex(('127.0.0.1',8765)) == 0:
-        webbrowser.open(url)
-        raise SystemExit('A server is already running on port 8765; opened it in your browser.')
-print(f'Presentation: {url}\nSpeaker view: press S\nStop server: Ctrl+C', flush=True)
-webbrowser.open(url)
-ThreadingHTTPServer(('127.0.0.1',8765), SimpleHTTPRequestHandler).serve_forever()
+from editor_server import make_server
+import argparse
+import webbrowser
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=8765)
+    parser.add_argument('--no-browser', action='store_true')
+    args = parser.parse_args()
+    url = 'http://localhost:%d/' % args.port
+    try:
+        server = make_server(Path(__file__).resolve().parent, args.port)
+    except OSError as error:
+        raise SystemExit('Could not start the editor server. Stop the old server on port %d first. %s' % (args.port, error))
+    print('Presentation with autosave: %s\nSpeaker view: S\nStop: Ctrl+C' % url, flush=True)
+    if not args.no_browser: webbrowser.open(url)
+    try: server.serve_forever()
+    except KeyboardInterrupt: pass
+    finally: server.server_close()

@@ -12,3 +12,6 @@ html.print-pdf .reveal .slides section{padding:45px 58px 40px!important}
 .evidence .smoke p:last-child{font-size:20px;line-height:1.4}
 
 .opening .team-credit{font-size:18px;line-height:1.55;margin-top:20px}
+.tools #save-status{font-weight:600;color:var(--ar);min-width:85px}.tools #save-status.save-error{color:var(--sta)}
+
+.tools{opacity:.7}.tools:hover,.editing .tools{opacity:1}

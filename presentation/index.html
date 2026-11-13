@@ -6,12 +6,12 @@
 <link rel="stylesheet" href="vendor/dist/reveal.css"><link rel="stylesheet" href="theme.css">
 </head>
 <body>
-<div class="tools" aria-label="Presentation tools"><button id="edit">Edit text · E</button><button id="save">Save edited HTML</button><button id="pdf">PDF view</button><span>← → slides · S speaker view · F fullscreen · ? help</span></div>
+<div class="tools" aria-label="Presentation tools"><button id="edit">Edit text · E</button><button id="save">Download HTML backup</button><span id="save-status" role="status" aria-live="polite">Connecting autosave…</span><button id="pdf">PDF view</button><span>← → slides · S speaker view · F fullscreen · ? help</span></div>
 <div class="reveal"><div class="slides">
 <section data-name="Opening" data-seconds="40">
  <div class="eyebrow">R&D EXPERIENCE · HCVISION · GROUP 2 · 13 NOVEMBER 2026</div>
  <div class="opening">
-  <div><h1 data-edit>What are we doing?<br><em>What comes next?</em></h1><p class="lead" data-edit>Action recognition & short-term action anticipation</p><p class="small" data-edit>EPIC-KITCHENS-100 · Mid-term presentation</p><p class="small team-credit" data-edit><b>Zoe</b> · AR<br><b>Niels</b> · STA features &nbsp; <b>Emiel</b> · STA models</p></div>
+  <div><h1 data-edit data-edit-id="e000">What are we doing?<br><em>What comes next?</em></h1><p class="lead" data-edit data-edit-id="e001">Action recognition & short-term action anticipation</p><p class="small" data-edit data-edit-id="e002">EPIC-KITCHENS-100 · Mid-term presentation</p><p class="small team-credit" data-edit data-edit-id="e003"><b>Zoe</b> · AR<br><b>Niels</b> · STA features &nbsp; <b>Emiel</b> · STA models</p></div>
   <div class="media opening-media"><video controls muted playsinline preload="auto" poster="assets/context.jpg" src="assets/context.mp4"></video><div class="caption">Context ends one second before the action.</div><div class="answer"><span class="sta">Next action</span><strong>take soy milk</strong></div></div>
  </div>
  <div class="source">Footage: EPIC-KITCHENS-100 [1], P01_03_5. Context ends 1 s before the annotated action.</div>
@@ -23,10 +23,10 @@
 </aside>
 </section>
 <section data-name="Motivation" data-seconds="40">
- <div class="eyebrow">MOTIVATION & RESEARCH QUESTIONS</div><h2 data-edit>Understanding actions<br>for timely assistance</h2>
- <p class="lead wide" data-edit>Predict the next cooking step to offer instructions at the right time.</p>
- <div class="twocol motivation research-questions"><div><span class="task ar">AR</span><h3 data-edit>What is happening now?</h3><p data-edit>Recognize the current verb–noun action from a clip.</p></div><div><span class="task sta">STA</span><h3 data-edit>What happens next?</h3><p data-edit>Does video context help prediction?<br>Does temporal modelling help?</p></div></div>
- <p class="bottom-note" data-edit>Vision: assistants that understand and anticipate everyday actions.</p>
+ <div class="eyebrow">MOTIVATION & RESEARCH QUESTIONS</div><h2 data-edit data-edit-id="e004">Understanding actions<br>for timely assistance</h2>
+ <p class="lead wide" data-edit data-edit-id="e005">Predict the next cooking step to offer instructions at the right time.</p>
+ <div class="twocol motivation research-questions"><div><span class="task ar">AR</span><h3 data-edit data-edit-id="e006">What is happening now?</h3><p data-edit data-edit-id="e007">Recognize the current verb–noun action from a clip.</p></div><div><span class="task sta">STA</span><h3 data-edit data-edit-id="e008">What happens next?</h3><p data-edit data-edit-id="e009">Does video context help prediction?<br>Does temporal modelling help?</p></div></div>
+ <p class="bottom-note" data-edit data-edit-id="e010">Vision: assistants that understand and anticipate everyday actions.</p>
  <aside class="notes">
 <p><strong>Zoe · 0:40–1:20</strong></p>
 <p>Imagine a cooking assistant that understands what you are doing. Predicting the next action could help it give the next instruction at the right time.</p>
@@ -35,9 +35,9 @@
 </aside>
 </section>
 <section data-name="Related work" data-seconds="50">
- <div class="eyebrow">RELATED WORK</div><h2 data-edit>Three foundations for our approach.</h2>
- <div class="literature"><article><div class="refnum">01</div><h3 data-edit>Egocentric actions</h3><p data-edit>EPIC-KITCHENS-100: verb–noun labels and recognition / anticipation benchmarks.</p><div class="small">Damen et al., IJCV 2022 [1]</div></article><article><div class="refnum">02</div><h3 data-edit>Video representations</h3><p data-edit>Pretrained R3D-18 extracts our STA video features.</p><div class="small">TorchVision R3D-18 [2]</div></article><article><div class="refnum">03</div><h3 data-edit>Temporal anticipation</h3><p data-edit>RU-LSTM uses past context to anticipate future actions.</p><div class="small">Furnari & Farinella, ICCV 2019 [3]</div></article></div>
- <p class="bottom-note" data-edit>Our simpler starting point: frequency prior → pooling → GRU.</p>
+ <div class="eyebrow">RELATED WORK</div><h2 data-edit data-edit-id="e011">Three foundations for our approach.</h2>
+ <div class="literature"><article><div class="refnum">01</div><h3 data-edit data-edit-id="e012">Egocentric actions</h3><p data-edit data-edit-id="e013">EPIC-KITCHENS-100: verb–noun labels and recognition / anticipation benchmarks.</p><div class="small">Damen et al., IJCV 2022 [1]</div></article><article><div class="refnum">02</div><h3 data-edit data-edit-id="e014">Video representations</h3><p data-edit data-edit-id="e015">Pretrained R3D-18 extracts our STA video features.</p><div class="small">TorchVision R3D-18 [2]</div></article><article><div class="refnum">03</div><h3 data-edit data-edit-id="e016">Temporal anticipation</h3><p data-edit data-edit-id="e017">RU-LSTM uses past context to anticipate future actions.</p><div class="small">Furnari & Farinella, ICCV 2019 [3]</div></article></div>
+ <p class="bottom-note" data-edit data-edit-id="e018">Our simpler starting point: frequency prior → pooling → GRU.</p>
  <aside class="notes">
 <p><strong>Emiel · 1:20–2:10</strong></p>
 <p>EPIC-KITCHENS gives us first-person videos with action labels.</p>
@@ -48,8 +48,8 @@
 </section>
 <!-- AR SECTION: edit the marked text in your browser (E), or edit this HTML. No AR results are asserted. -->
 <section data-name="AR method" data-seconds="65" class="ar-section">
- <div class="eyebrow ar">ACTION RECOGNITION</div><h2 data-edit>What action is happening?</h2>
- <div class="twocol ar-method"><div class="media"><video controls muted playsinline preload="auto" src="assets/action.mp4" poster="assets/action.jpg"></video><div class="caption">Annotated action clip · example label: take soy milk [1]</div></div><div><p class="lead" data-edit>Observe the action clip.<br>Predict verb + noun.</p><div class="method-line" data-edit>Action clip → AR model → verb + noun</div><h3 class="edit-label" data-edit>Model & training setup — to complete</h3><p data-edit>[Architecture + reference]<br>[Frames per clip + pretraining]<br>[Training setup + design reason]</p></div></div>
+ <div class="eyebrow ar">ACTION RECOGNITION</div><h2 data-edit data-edit-id="e019">What action is happening?</h2>
+ <div class="twocol ar-method"><div class="media"><video controls muted playsinline preload="auto" src="assets/action.mp4" poster="assets/action.jpg"></video><div class="caption">Annotated action clip · example label: take soy milk [1]</div></div><div><p class="lead" data-edit data-edit-id="e020">Observe the action clip.<br>Predict verb + noun.</p><div class="method-line" data-edit data-edit-id="e021">Action clip → AR model → verb + noun</div><h3 class="edit-label" data-edit data-edit-id="e022">Model & training setup — to complete</h3><p data-edit data-edit-id="e023">[Architecture + reference]<br>[Frames per clip + pretraining]<br>[Training setup + design reason]</p></div></div>
  <div class="source">Example P01_03_5, 13.57–14.56 s. This is a ground-truth illustration, not an AR model output.</div>
  <aside class="notes">
 <p><strong>Zoe · 2:10–3:15</strong></p>
@@ -58,10 +58,10 @@
 </aside>
 </section>
 <section data-name="AR evidence" data-seconds="65" class="ar-section">
- <div class="eyebrow ar">ACTION RECOGNITION · PRELIMINARY EVIDENCE</div><h2 data-edit>AR results & findings</h2>
- <p class="lead" data-edit>Validation comparison · Zoe to complete</p>
- <table class="results editable-table"><thead><tr><th data-edit>Experiment</th><th data-edit>Metric & split</th><th data-edit>Measured result</th></tr></thead><tbody><tr><td data-edit>Baseline / reference</td><td data-edit>[Metric + validation split]</td><td data-edit>[Measured score]</td></tr><tr><td data-edit>Current AR model</td><td data-edit>[Same metric + split]</td><td data-edit>[Measured score]</td></tr></tbody></table>
- <div class="twocol compact"><div><h3 data-edit>Main finding</h3><p data-edit>[Change vs baseline]<br>[One prediction example]</p></div><div><h3 data-edit>Current limitation</h3><p data-edit>[Main failure case]<br>[Experiment to address it]</p></div></div>
+ <div class="eyebrow ar">ACTION RECOGNITION · PRELIMINARY EVIDENCE</div><h2 data-edit data-edit-id="e024">AR results & findings</h2>
+ <p class="lead" data-edit data-edit-id="e025">Validation comparison · Zoe to complete</p>
+ <table class="results editable-table"><thead><tr><th data-edit data-edit-id="e026">Experiment</th><th data-edit data-edit-id="e027">Metric & split</th><th data-edit data-edit-id="e028">Measured result</th></tr></thead><tbody><tr><td data-edit data-edit-id="e029">Baseline / reference</td><td data-edit data-edit-id="e030">[Metric + validation split]</td><td data-edit data-edit-id="e031">[Measured score]</td></tr><tr><td data-edit data-edit-id="e032">Current AR model</td><td data-edit data-edit-id="e033">[Same metric + split]</td><td data-edit data-edit-id="e034">[Measured score]</td></tr></tbody></table>
+ <div class="twocol compact"><div><h3 data-edit data-edit-id="e035">Main finding</h3><p data-edit data-edit-id="e036">[Change vs baseline]<br>[One prediction example]</p></div><div><h3 data-edit data-edit-id="e037">Current limitation</h3><p data-edit data-edit-id="e038">[Main failure case]<br>[Experiment to address it]</p></div></div>
  <aside class="notes">
 <p><strong>Zoe · 3:15–4:20</strong></p>
 <p>[AR baseline score, current model score and main finding.]</p>
@@ -69,9 +69,9 @@
 </aside>
 </section>
 <section data-name="STA protocol" data-seconds="55">
- <div class="eyebrow sta">SHORT-TERM ACTION ANTICIPATION · EXPERIMENTAL SETUP</div><h2 data-edit>Evaluate on people<br>excluded from training.</h2>
+ <div class="eyebrow sta">SHORT-TERM ACTION ANTICIPATION · EXPERIMENTAL SETUP</div><h2 data-edit data-edit-id="e039">Evaluate on people<br>excluded from training.</h2>
  <div class="split-numbers"><div><strong>26</strong><span>training participants</span><small>59,767 events</small></div><div><strong>6</strong><span>validation participants</span><small>7,450 events</small></div></div>
- <p class="lead" data-edit>Fixed participant split · seed 42 · no participant overlap</p><p class="body-width" data-edit>Class-mean Top-5 recall: equal weight for each class present in validation.</p>
+ <p class="lead" data-edit data-edit-id="e040">Fixed participant split · seed 42 · no participant overlap</p><p class="body-width" data-edit data-edit-id="e041">Class-mean Top-5 recall: equal weight for each class present in validation.</p>
  <div class="source">STA project split, not the official benchmark split. Source: project notes, §§2 & 4 [4]. AR split must be confirmed separately.</div>
  <aside class="notes">
 <p><strong>Niels · 4:20–5:15</strong></p>
@@ -82,10 +82,10 @@
 </aside>
 </section>
 <section data-name="STA timing" data-seconds="65">
- <div class="eyebrow sta">STA · OBSERVATION RULE</div><h2 data-edit>Predict before the action starts.</h2>
- <p class="lead" data-edit>Five seconds of context. One second without observation.</p>
+ <div class="eyebrow sta">STA · OBSERVATION RULE</div><h2 data-edit data-edit-id="e042">Predict before the action starts.</h2>
+ <p class="lead" data-edit data-edit-id="e043">Five seconds of context. One second without observation.</p>
  <div class="timeline" role="img" aria-label="Five one-second observation segments from t minus 6 to t minus 1, followed by a one-second forbidden gap before the target action at t."><div class="observation"><span>−6</span><span>−5</span><span>−4</span><span>−3</span><span>−2</span></div><div class="gap">−1</div><div class="target">t</div><div class="obslabel">Observed context · five 1 s segments</div><div class="gaplabel">1 s gap</div><div class="targetlabel">Target action</div></div>
- <div><p class="statement" data-edit>Every sampled frame must be earlier than t − 1.</p><p data-edit>16 frames / segment → frozen R3D-18 → 5 × 512 features + validity mask.</p></div>
+ <div><p class="statement" data-edit data-edit-id="e044">Every sampled frame must be earlier than t − 1.</p><p data-edit data-edit-id="e045">16 frames / segment → frozen R3D-18 → 5 × 512 features + validity mask.</p></div>
  <div class="source">Nominal observation window: [t − 6, t − 1). 16 sampled frames per valid segment. Project notes, §3 [4].</div>
  <aside class="notes">
 <p><strong>Niels · 5:15–6:20</strong></p>
@@ -98,10 +98,10 @@
 </aside>
 </section>
 <section data-name="STA models" data-seconds="65">
- <div class="eyebrow sta">STA · METHOD</div><h2 data-edit>Does temporal order help?</h2>
- <div class="pipeline" data-edit>5 video segments → frozen R3D-18 → 5 × 512 features + mask</div>
- <table class="model-table"><thead><tr><th>Model</th><th>What it uses</th><th>Question</th></tr></thead><tbody><tr><td data-edit><b>M0</b> Frequency prior</td><td data-edit>Training label frequencies only</td><td data-edit>Frequency alone?</td></tr><tr><td data-edit><b>M1</b> Masked mean pooling</td><td data-edit>Valid features, averaged</td><td data-edit>Does video help?</td></tr><tr><td data-edit><b>M2</b> Masked GRU</td><td data-edit>Valid features in time order</td><td data-edit>Does temporal modelling help?</td></tr></tbody></table>
- <p class="bottom-note" data-edit>Verb + noun outputs. M1 / M2 implemented and tested; full training still ahead.</p>
+ <div class="eyebrow sta">STA · METHOD</div><h2 data-edit data-edit-id="e046">Does temporal order help?</h2>
+ <div class="pipeline" data-edit data-edit-id="e047">5 video segments → frozen R3D-18 → 5 × 512 features + mask</div>
+ <table class="model-table"><thead><tr><th>Model</th><th>What it uses</th><th>Question</th></tr></thead><tbody><tr><td data-edit data-edit-id="e048"><b>M0</b> Frequency prior</td><td data-edit data-edit-id="e049">Training label frequencies only</td><td data-edit data-edit-id="e050">Frequency alone?</td></tr><tr><td data-edit data-edit-id="e051"><b>M1</b> Masked mean pooling</td><td data-edit data-edit-id="e052">Valid features, averaged</td><td data-edit data-edit-id="e053">Does video help?</td></tr><tr><td data-edit data-edit-id="e054"><b>M2</b> Masked GRU</td><td data-edit data-edit-id="e055">Valid features in time order</td><td data-edit data-edit-id="e056">Does temporal modelling help?</td></tr></tbody></table>
+ <p class="bottom-note" data-edit data-edit-id="e057">Verb + noun outputs. M1 / M2 implemented and tested; full training still ahead.</p>
  <div class="source">R3D-18 pretrained weights: TorchVision [2]. STA design: project notes [4] and STA implementation plan [5].</div>
  <aside class="notes">
 <p><strong>Emiel · 6:20–7:25</strong></p>
@@ -112,9 +112,9 @@
 </aside>
 </section>
 <section data-name="STA evidence" data-seconds="75">
- <div class="eyebrow sta">STA · MEASURED EVIDENCE</div><h2 data-edit>A measured baseline.<br>A verified extraction pipeline.</h2>
- <div class="twocol evidence"><div><h3 data-edit>M0 · class-mean Top-5 recall</h3><table class="results"><thead><tr><th>Verb</th><th>Noun</th><th>Action</th></tr></thead><tbody><tr><td data-edit>6.94%</td><td data-edit>2.87%</td><td data-edit>0.274%</td></tr></tbody></table><p data-edit>Frequency-only baseline for the video models.</p><div class="small">7,450 validation events · project participant split</div></div><div class="smoke"><h3 data-edit>H100 smoke extraction</h3><p class="big-stat" data-edit>64 <span>real events</span></p><p class="large-detail" data-edit>48 s extraction · 0 video errors</p><p data-edit>Missing local videos → corrected test inputs<br>Corrupted video → downloaded again</p></div></div>
- <p class="bottom-note" data-edit>Training-feature extraction: queued. Lesson: check videos before full extraction.</p>
+ <div class="eyebrow sta">STA · MEASURED EVIDENCE</div><h2 data-edit data-edit-id="e058">A measured baseline.<br>A verified extraction pipeline.</h2>
+ <div class="twocol evidence"><div><h3 data-edit data-edit-id="e059">M0 · class-mean Top-5 recall</h3><table class="results"><thead><tr><th>Verb</th><th>Noun</th><th>Action</th></tr></thead><tbody><tr><td data-edit data-edit-id="e060">6.94%</td><td data-edit data-edit-id="e061">2.87%</td><td data-edit data-edit-id="e062">0.274%</td></tr></tbody></table><p data-edit data-edit-id="e063">Frequency-only baseline for the video models.</p><div class="small">7,450 validation events · project participant split</div></div><div class="smoke"><h3 data-edit data-edit-id="e064">H100 smoke extraction</h3><p class="big-stat" data-edit data-edit-id="e065">64 <span>real events</span></p><p class="large-detail" data-edit data-edit-id="e066">48 s extraction · 0 video errors</p><p data-edit data-edit-id="e067">Missing local videos → corrected test inputs<br>Corrupted video → downloaded again</p></div></div>
+ <p class="bottom-note" data-edit data-edit-id="e068">Training-feature extraction: queued. Lesson: check videos before full extraction.</p>
  <div class="source">Measured M0 and H100 results: project notes [4], 12 Nov 2026. Queue status and video repair: Niels’s update, 13 Nov 2026.</div>
  <aside class="notes">
 <p><strong>Emiel · 7:25–7:55</strong></p>
@@ -128,14 +128,14 @@
 </aside>
 </section>
 <section data-name="Next steps" data-seconds="50">
- <div class="eyebrow">NEXT STEPS · OWNERS & CHECKS</div><h2 data-edit>Next steps and success checks</h2>
+ <div class="eyebrow">NEXT STEPS · OWNERS & CHECKS</div><h2 data-edit data-edit-id="e069">Next steps and success checks</h2>
  <table class="roadmap"><thead><tr><th>Who</th><th>Next action</th><th>How we check it</th></tr></thead><tbody>
- <tr><td data-edit>Niels</td><td data-edit>Finish extraction; check features</td><td data-edit>All events covered;<br>features, masks, IDs valid</td></tr>
- <tr><td data-edit>Emiel</td><td data-edit>Train on a small sample</td><td data-edit>Loss decreases;<br>checkpoint reloads</td></tr>
- <tr><td data-edit>Emiel</td><td data-edit>Train pooling + GRU</td><td data-edit>Validation Action MT5R vs M0;<br>same split</td></tr>
- <tr><td data-edit>Zoe</td><td data-edit>[Next AR experiment]</td><td data-edit>[Metric + split + target]</td></tr>
+ <tr><td data-edit data-edit-id="e070">Niels</td><td data-edit data-edit-id="e071">Finish extraction; check features</td><td data-edit data-edit-id="e072">All events covered;<br>features, masks, IDs valid</td></tr>
+ <tr><td data-edit data-edit-id="e073">Emiel</td><td data-edit data-edit-id="e074">Train on a small sample</td><td data-edit data-edit-id="e075">Loss decreases;<br>checkpoint reloads</td></tr>
+ <tr><td data-edit data-edit-id="e076">Emiel</td><td data-edit data-edit-id="e077">Train pooling + GRU</td><td data-edit data-edit-id="e078">Validation Action MT5R vs M0;<br>same split</td></tr>
+ <tr><td data-edit data-edit-id="e079">Zoe</td><td data-edit data-edit-id="e080">[Next AR experiment]</td><td data-edit data-edit-id="e081">[Metric + split + target]</td></tr>
  </tbody></table>
- <p class="closing" data-edit>Next decision: do video and temporal modelling improve prediction?</p>
+ <p class="closing" data-edit data-edit-id="e082">Next decision: do video and temporal modelling improve prediction?</p>
  <aside class="notes">
 <p><strong>Zoe · 8:40–8:50</strong></p>
 <p>[Next AR experiment and how to check it.]</p>
