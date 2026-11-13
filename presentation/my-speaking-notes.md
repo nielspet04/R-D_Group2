@@ -38,7 +38,7 @@ Feature extraction for the training set is now queued. This prepares the feature
 
 ## Slide 10 — Niels · 8:50–9:00
 
-Once extraction finishes, I will check the saved features, masks and action IDs. Then I will pass the features to Emiel.
+For STA, I will test different frame sampling and context lengths to see which video input gives better results.
 
 ## Slide 13 — Niels · Q&A
 

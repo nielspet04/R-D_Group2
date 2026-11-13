@@ -15,8 +15,8 @@ Zoe owns AR. Niels owns STA data and feature extraction. Emiel owns STA models, 
 | 9. Baseline scores | Emiel | 0:30 | 7:55 | Emiel → Niels, same slide |
 | 9. Extraction and video problems | Niels | 0:45 | 8:40 | Advance to slide 10; Zoe starts |
 | 10. AR next step | Zoe | 0:10 | 8:50 | Zoe → Niels, same slide |
-| 10. Feature handoff | Niels | 0:10 | 9:00 | Niels → Emiel, same slide |
-| 10. Model experiments | Emiel | 0:20 | 9:20 | Emiel → Zoe, same slide |
+| 10. Better video inputs | Niels | 0:10 | 9:00 | Niels → Emiel, same slide |
+| 10. Model tuning and error analysis | Emiel | 0:20 | 9:20 | Emiel → Zoe, same slide |
 | 10. Closing | Zoe | 0:10 | 9:30 | Q&A |
 
 Planned totals: Zoe 3:50, Niels 2:55, Emiel 2:45. Total 9:30, leaving 30 seconds before the strict 10-minute limit. This is a rehearsal plan; verify it with a full run.

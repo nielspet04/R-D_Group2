@@ -128,23 +128,24 @@
 </aside>
 </section>
 <section data-name="Next steps" data-seconds="50">
- <div class="eyebrow">NEXT STEPS · OWNERS & CHECKS</div><h2 data-edit data-edit-id="e069">Next steps and success checks</h2>
- <table class="roadmap"><thead><tr><th>Who</th><th>Next action</th><th>How we check it</th></tr></thead><tbody>
- <tr><td data-edit data-edit-id="e070">Niels</td><td data-edit data-edit-id="e071">Finish extraction; check features</td><td data-edit data-edit-id="e072">All events covered;<br>features, masks, IDs valid</td></tr>
- <tr><td data-edit data-edit-id="e073">Emiel</td><td data-edit data-edit-id="e074">Train on a small sample</td><td data-edit data-edit-id="e075">Loss decreases;<br>checkpoint reloads</td></tr>
- <tr><td data-edit data-edit-id="e076">Emiel</td><td data-edit data-edit-id="e077">Train pooling + GRU</td><td data-edit data-edit-id="e078">Validation Action MT5R vs M0;<br>same split</td></tr>
- <tr><td data-edit data-edit-id="e079">Zoe</td><td data-edit data-edit-id="e080">Run three controlled comparisons: 8 vs. 16 frames, frozen vs. fine-tuned, weighted loss</td><td data-edit data-edit-id="e081">Action Top-1 on the validation split, same seed; compared with the 16-frame baseline</td></tr>
+ <div class="eyebrow">NEXT STEPS · CONTROLLED EXPERIMENTS</div><h2 data-edit data-edit-id="e069">Next steps: improve the results</h2>
+ <table class="roadmap"><thead><tr><th>Who</th><th>Focus</th><th>Experiments</th></tr></thead><tbody>
+ <tr><td data-edit data-edit-id="e070">Niels</td><td data-edit data-edit-id="e071">Improve the video input</td><td data-edit data-edit-id="e072">Frame sampling / context length</td></tr>
+ <tr><td data-edit data-edit-id="e073">Emiel</td><td data-edit data-edit-id="e074">Tune pooling + GRU</td><td data-edit data-edit-id="e075">Learning rate, dropout,<br>class-balanced loss</td></tr>
+ <tr><td data-edit data-edit-id="e076">Niels + Emiel</td><td data-edit data-edit-id="e077">Target the main errors</td><td data-edit data-edit-id="e078">Stronger features / fine-tuning<br>if the error analysis supports it</td></tr>
+ <tr><td data-edit data-edit-id="e079">Zoe</td><td data-edit data-edit-id="e080">8 vs 16 frames; fine-tuning;<br>weighted loss</td><td data-edit data-edit-id="e081">Action Top-1 vs 16-frame baseline;<br>same validation split + seed</td></tr>
  </tbody></table>
- <p class="closing" data-edit data-edit-id="e082">Next decision: do video and temporal modelling improve prediction?</p>
+ <p class="closing" data-edit data-edit-id="e082">STA goal: improve validation Action MT5R on the same split.</p>
+ <div class="source">First: full pooling / GRU results. Then change one factor at a time; keep the 1 s anticipation gap.</div>
  <aside class="notes">
 <p><strong>Zoe · 8:40–8:50</strong></p>
-<p>[Next AR experiment and how to check it.]</p>
+<p>For AR, I will test frame count, fine-tuning and weighted loss against the sixteen-frame baseline.</p>
 <p><strong>Niels · 8:50–9:00</strong></p>
-<p>Once extraction finishes, I will check the saved features, masks and action IDs. Then I will pass the features to Emiel.</p>
+<p>For STA, I will test different frame sampling and context lengths to see which video input gives better results.</p>
 <p><strong>Emiel · 9:00–9:20</strong></p>
-<p>I will first check that both models can learn from a small sample. Then I will train them on the full feature set and compare their scores with our starting model, using the same split.</p>
+<p>I will first train pooling and GRU, then tune the learning rate, dropout and loss. We will look at mistakes to decide whether to try stronger features or fine-tuning. We will keep changes that improve our validation score.</p>
 <p><strong>Zoe · 9:20–9:30</strong></p>
-<p>Our goal is to understand the current action and predict the next one. Thank you.</p>
+<p>Our goal is to get the strongest results we can, and understand which changes help. Thank you.</p>
 </aside>
 </section>
 <section data-name="References" data-seconds="0" data-visibility="uncounted" class="references">

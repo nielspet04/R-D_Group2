@@ -114,19 +114,19 @@ Feature extraction for the training set is now queued. This prepares the feature
 
 **Zoe · 8:40–8:50**
 
-[Next AR experiment and how to check it.]
+For AR, I will test frame count, fine-tuning and weighted loss against the sixteen-frame baseline.
 
 **Niels · 8:50–9:00**
 
-Once extraction finishes, I will check the saved features, masks and action IDs. Then I will pass the features to Emiel.
+For STA, I will test different frame sampling and context lengths to see which video input gives better results.
 
 **Emiel · 9:00–9:20**
 
-I will first check that both models can learn from a small sample. Then I will train them on the full feature set and compare their scores with our starting model, using the same split.
+I will first train pooling and GRU, then tune the learning rate, dropout and loss. We will look at mistakes to decide whether to try stronger features or fine-tuning. We will keep changes that improve our validation score.
 
 **Zoe · 9:20–9:30**
 
-Our goal is to understand the current action and predict the next one. Thank you.
+Our goal is to get the strongest results we can, and understand which changes help. Thank you.
 
 ## Slide 12 — Metric details
 
