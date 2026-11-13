@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,6 +16,7 @@ except ImportError:
     torch = None
 
 if torch is not None:
+    from scripts.evaluate_sta_model import main as evaluate_main
     from scripts.train_sta import ShardAwareBatchSampler, main
     from src.sta_features import STAFeatureDataset, save_sta_feature_shard
     from src.sta_training import load_checkpoint
@@ -237,6 +239,40 @@ class TrainSTAIntegrationTests(unittest.TestCase):
                     self.assertEqual(
                         checkpoint["configuration"]["model"],
                         model_name,
+                    )
+
+                    evaluation_path = (
+                        output_root
+                        / f"tables/{model_name}_independent_evaluation.json"
+                    )
+                    evaluation = evaluate_main(
+                        [
+                            "--checkpoint",
+                            str(expected_paths[0]),
+                            "--feature-root",
+                            str(feature_root),
+                            "--annotations",
+                            str(annotation_path),
+                            "--output",
+                            str(evaluation_path),
+                            "--device",
+                            "cpu",
+                        ]
+                    )
+                    self.assertTrue(evaluation_path.is_file())
+                    stored_evaluation = json.loads(
+                        evaluation_path.read_text(encoding="utf-8")
+                    )
+                    self.assertEqual(evaluation["model"], model_name)
+                    self.assertEqual(evaluation["checkpoint_epoch"], 1)
+                    self.assertEqual(evaluation["validation_events"], 3)
+                    self.assertEqual(
+                        evaluation["validation_fallback_events"],
+                        1,
+                    )
+                    self.assertEqual(
+                        stored_evaluation["action_mt5r"],
+                        checkpoint["validation_metrics"]["action_mt5r"],
                     )
 
 
