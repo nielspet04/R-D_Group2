@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-module load "cluster/wice/$SLURM_JOB_PARTITION"
+module load cluster/wice/gpu_a100
 source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 conda activate rd_epic_cuda
 
