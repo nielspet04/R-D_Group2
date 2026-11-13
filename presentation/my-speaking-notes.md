@@ -4,13 +4,15 @@ Names and times are cues. Read the paragraphs below them.
 
 ## Slide 6 — Niels · 4:20–5:15
 
-I prepare the video data for Emiel’s models.
+I save one record for each action. It contains five feature vectors, each with 512 numbers.
 
-We agreed on one saved feature format. This let me build the extraction while Emiel worked on the models using test features.
+There are also five true-or-false values called a mask. They show which video parts are available. I save the verb, noun and event ID alongside the features.
 
-We split the data by person: 26 people for training and six for validation. This checks how the models work on people they have not seen during training.
+These records are stored in .pt files called shards. Emiel reads them with our shared loader. Agreeing on this format let us work in parallel.
 
-All STA models use the same split. Our main score gives each action class the same weight.
+We use 26 people for training and six different people for validation. This checks how the models work on people they have not seen during training.
+
+The next slide shows how I create these features.
 
 ## Slide 7 — Niels · 5:15–6:20
 
