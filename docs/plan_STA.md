@@ -461,7 +461,7 @@ This is not a real result. It verifies that:
 Add a committed `environment-vsc.yml` defining:
 
 ```text
-Environment name: rd_epic
+Environment name: rd_epic_cuda
 Python:           3.11
 PyTorch:          2.5.1
 TorchVision:      0.20.1
@@ -481,9 +481,12 @@ On the VSC login node:
 cd "$VSC_DATA/R-D_Group2"
 git pull --ff-only
 
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
+module load Miniforge3/25.3.0-3
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda config --append envs_dirs "$VSC_DATA/conda_envs"
+conda config --append pkgs_dirs "$VSC_SCRATCH/conda_pkgs"
 conda env create -f environment-vsc.yml
-conda activate rd_epic
+conda activate rd_epic_cuda
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 mkdir -p "$TORCH_HOME"
@@ -509,7 +512,7 @@ Run this lightweight audit before requesting a GPU:
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-conda activate rd_epic
+conda activate rd_epic_cuda
 
 python scripts/audit_sta_data.py
 ```
@@ -549,8 +552,9 @@ Every job must:
 
 ```bash
 module load cluster/wice/gpu_p100
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic
+module load Miniforge3/25.3.0-3
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate rd_epic_cuda
 export TORCH_HOME="$VSC_DATA/torch-cache"
 cd "$VSC_DATA/R-D_Group2"
 ```

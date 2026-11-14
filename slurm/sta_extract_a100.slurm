@@ -29,7 +29,8 @@ case "$SPLIT" in
 esac
 
 module load cluster/wice/gpu_a100
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
+module load Miniforge3/25.3.0-3
+source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate rd_epic_cuda
 export TORCH_HOME="$VSC_DATA/torch-cache"
 export PYTHONUNBUFFERED=1
