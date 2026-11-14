@@ -1,15 +1,15 @@
 #!/bin/bash -l
-#SBATCH --job-name=sta-train
+#SBATCH --job-name=sta-a100-train-smoke
 #SBATCH --account=lp_edu_rdlab
 #SBATCH --clusters=wice
-#SBATCH --partition=gpu_p100
+#SBATCH --partition=gpu_a100_debug
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=20000M
-#SBATCH --time=04:00:00
-#SBATCH --output=logs/sta-train-%j.out
+#SBATCH --mem=30000M
+#SBATCH --time=00:30:00
+#SBATCH --output=logs/sta-a100-train-smoke-%j.out
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ case "$MODEL" in
         ;;
 esac
 
-module load cluster/wice/gpu_p100
+module load cluster/wice/gpu_a100
 source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 conda activate rd_epic_cuda
 
@@ -40,12 +40,13 @@ cd "$VSC_DATA/R-D_Group2"
 
 FEATURE_ROOT=data/processed/sta_features
 ANNOTATIONS=data/raw/EPIC_100_train.csv
-OUTPUT_ROOT=results
+OUTPUT_ROOT=results/smoke_a100
 CHECKPOINT="$OUTPUT_ROOT/checkpoints/$MODEL/best.pt"
 EVALUATION="$OUTPUT_ROOT/tables/${MODEL}_evaluation.json"
 
 printf 'Job ID: %s\n' "$SLURM_JOB_ID"
 printf 'Model: %s\n' "$MODEL"
+printf 'Purpose: one-epoch correctness smoke test; not a reported result\n'
 printf 'Host: %s\n' "$(hostname)"
 printf 'Python: %s\n' "$(command -v python)"
 printf 'Git commit: %s\n' "$(git rev-parse HEAD)"
@@ -64,26 +65,15 @@ test -s "$FEATURE_ROOT/train/manifest.csv"
 test -s "$FEATURE_ROOT/validation/manifest.csv"
 test -s "$ANNOTATIONS"
 
-python scripts/verify_sta_extraction.py \
-  --feature-root "$FEATURE_ROOT" \
-  --split train \
-  --events 59767 \
-  --shard-size 2048
-
-python scripts/verify_sta_extraction.py \
-  --feature-root "$FEATURE_ROOT" \
-  --split validation \
-  --events 7450 \
-  --shard-size 2048
-
 started=$SECONDS
 python scripts/train_sta.py \
   --model "$MODEL" \
   --feature-root "$FEATURE_ROOT" \
   --annotations "$ANNOTATIONS" \
   --output-root "$OUTPUT_ROOT" \
-  --device cuda
-printf 'Training seconds: %d\n' "$((SECONDS - started))"
+  --device cuda \
+  --smoke-test-epochs 1
+printf 'Training and validation seconds: %d\n' "$((SECONDS - started))"
 
 python scripts/evaluate_sta_model.py \
   --checkpoint "$CHECKPOINT" \
@@ -124,7 +114,7 @@ for name in (
     value = metrics[name]
     if value is None or not math.isfinite(value):
         raise SystemExit(f"Metric {name} is not finite: {value}")
-print("Evaluation coverage and finite-metric checks passed")
+print("Smoke evaluation coverage and finite-metric checks passed")
 PY
 
-printf 'STA %s training and evaluation passed.\n' "$MODEL"
+printf 'A100 %s one-epoch training smoke passed.\n' "$MODEL"

@@ -12,6 +12,7 @@ import torch
 from torch import nn
 
 from src.sta_model_0 import FrequencyPriorSTA
+from src.run_monitor import monitor
 from src.sta_training import (
     TrainingConfig,
     get_git_provenance,
@@ -111,6 +112,7 @@ def train_model(
     model.to(device)
 
     for epoch in range(1, config.max_epochs + 1):
+        monitor.update(phase="training", epoch=epoch, max_epochs=config.max_epochs)
         training_statistics = train_one_epoch(
             model,
             train_loader,
@@ -123,6 +125,7 @@ def train_model(
                 "Training split contains no events with usable context"
             )
 
+        monitor.update(phase="validation")
         validation_metrics = validate_one_epoch(
             model,
             validation_loader,
@@ -174,6 +177,7 @@ def train_model(
             }
         )
         write_history(history_path, history)
+        monitor.update(completed_epoch=epoch, best_epoch=best_epoch, best_action_mt5r=best_score)
 
         if (
             epochs_without_improvement

@@ -559,7 +559,7 @@ Do not train or extract features directly on a login node.
 
 ### GPU smoke job
 
-Create `slurm/sta_smoke.slurm` with:
+Create `slurm/sta_smoke_p100.slurm` with:
 
 ```text
 partition: gpu_p100_debug
@@ -583,7 +583,7 @@ Submit and monitor:
 
 ```bash
 mkdir -p logs
-sbatch slurm/sta_smoke.slurm
+sbatch slurm/sta_smoke_p100.slurm
 squeue -M wice -u "$USER"
 ```
 
@@ -600,33 +600,35 @@ Do not proceed if the state is not `COMPLETED` or if CUDA is unavailable.
 
 ### Full feature extraction
 
-Create `slurm/sta_extract.slurm` with:
+Use `slurm/sta_extract_a100.slurm` for the full extraction jobs:
 
 ```text
-partition:      gpu_p100
-time:           48:00:00
+partition:      gpu_a100
+time:           12:00:00
 GPUs:           1
-CPU cores:      8
-event batch:    4
-decoder workers: 4
+CPU cores:      12
+event batch:    8
+decoder workers: 8
 shard size:     2048
 ```
 
 Submit training and validation separately:
 
 ```bash
-sbatch slurm/sta_extract.slurm train
-sbatch slurm/sta_extract.slurm validation
+sbatch slurm/sta_extract_a100.slurm train
+sbatch slurm/sta_extract_a100.slurm validation
 ```
 
 The extraction command inside the job is:
 
 ```bash
 python scripts/extract_sta_features.py \
+  --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
   --split "$1" \
+  --output-root data/processed/sta_features \
   --device cuda \
-  --event-batch-size 4 \
-  --workers 4 \
+  --event-batch-size 8 \
+  --workers 8 \
   --shard-size 2048 \
   --dtype float16 \
   --resume
@@ -654,7 +656,21 @@ Acceptance criteria:
 
 ### Full Model 1 training
 
-Create `slurm/sta_train.slurm` with:
+Before a reported run, execute a one-epoch correctness smoke test on the A100
+debug partition. It reads the complete cached feature sets so it exercises all
+shards, but writes to `results/smoke_a100` and must not be reported as a model
+result:
+
+```bash
+mkdir -p logs
+sbatch slurm/sta_train_smoke_a100.slurm mean_pool
+```
+
+The `gpu_a100_debug` partition accepts jobs up to one hour. Only one A100 debug
+job may be queued at a time, so smoke the mean-pooling model first and submit a
+GRU smoke separately only if needed.
+
+Create `slurm/sta_train_p100.slurm` with:
 
 ```text
 partition: gpu_p100
@@ -666,7 +682,7 @@ CPUs:      4
 Submit:
 
 ```bash
-sbatch slurm/sta_train.slurm mean_pool
+sbatch slurm/sta_train_p100.slurm mean_pool
 ```
 
 After completion:
@@ -689,7 +705,7 @@ Acceptance criteria:
 Submit:
 
 ```bash
-sbatch slurm/sta_train.slurm gru
+sbatch slurm/sta_train_p100.slurm gru
 ```
 
 Evaluate identically:
@@ -752,7 +768,7 @@ After choosing Model 1 or Model 2:
 Run the same extractor with the provided hidden-test CSV:
 
 ```bash
-sbatch slurm/sta_extract.slurm test
+sbatch slurm/sta_extract_a100.slurm test
 ```
 
 Use `sta_observation_end_seconds` as the authoritative cutoff. Never infer or retrieve hidden labels.
@@ -857,8 +873,8 @@ and hidden test.
 - Implement `scripts/audit_sta_data.py` and its split/video checks.
 - Add unit tests for boundaries, frame selection, the one-second gap, padding,
   deterministic extraction and feature shapes.
-- Create `environment-vsc.yml`, `slurm/sta_smoke.slurm` and
-  `slurm/sta_extract.slurm`.
+- Create `environment-vsc.yml`, `slurm/sta_smoke_p100.slurm` and
+  `slurm/sta_extract_a100.slurm`.
 - Run the local eight-event extraction, VSC data audit, 32-event GPU smoke
   extraction and full train/validation/test extraction.
 - Record extraction errors and make sure they are represented as `video_error`
@@ -882,7 +898,7 @@ hidden-test submission.
   retaining every validation/test row.
 - Add unit tests for masking, output shapes, fallback behavior, metric coverage,
   checkpoint round trips and submission validation.
-- Create `slurm/sta_train.slurm`.
+- Create `slurm/sta_train_p100.slurm`.
 - Run the 128-example overfit tests and full Model 1 and Model 2 training jobs.
 - Generate the comparison table, select the model using validation Action MT5R,
   retrain it on all labelled features and create `submission_sta.pt`.

@@ -16,7 +16,7 @@ set -euo pipefail
 module load cluster/wice/gpu_p100
 
 source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic
+conda activate rd_epic_cuda
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 
@@ -49,7 +49,7 @@ print(
 
 python -m unittest discover -s tests -v
 
-python scripts/evaluate_sta_prior.py
+python scripts/evaluate_sta_model_0.py
 
 python scripts/extract_sta_features.py \
   --split train \
