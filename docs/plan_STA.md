@@ -481,10 +481,7 @@ On the VSC login node:
 cd "$VSC_DATA/R-D_Group2"
 git pull --ff-only
 
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda config --append envs_dirs "$VSC_DATA/conda_envs"
-conda config --append pkgs_dirs "$VSC_SCRATCH/conda_pkgs"
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 conda env create -f environment-vsc.yml
 conda activate rd_epic_cuda
 
@@ -552,8 +549,7 @@ Every job must:
 
 ```bash
 module load cluster/wice/gpu_p100
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 conda activate rd_epic_cuda
 export TORCH_HOME="$VSC_DATA/torch-cache"
 cd "$VSC_DATA/R-D_Group2"
