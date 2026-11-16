@@ -473,7 +473,9 @@ Matplotlib:       3.9
 TQDM:             4.66
 ```
 
-Use the `pytorch`, `nvidia` and `conda-forge` channels. CUDA 11.8 is chosen for compatibility with the P100 GPUs.
+The existing VSC environment uses CUDA 11.8 for compatibility with the P100
+GPUs. Its interpreter is used directly so jobs do not depend on a particular
+Conda distribution or shell activation.
 
 On the VSC login node:
 
@@ -481,9 +483,9 @@ On the VSC login node:
 cd "$VSC_DATA/R-D_Group2"
 git pull --ff-only
 
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda env create -f environment-vsc.yml
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+test -x "$PYTHON"
+"$PYTHON" -c "import torch; print(torch.__version__)"
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 mkdir -p "$TORCH_HOME"
@@ -492,7 +494,7 @@ mkdir -p "$TORCH_HOME"
 Download and verify the encoder weights once:
 
 ```bash
-python -c "
+"$PYTHON" -c "
 import torch
 from torchvision.models.video import r3d_18, R3D_18_Weights
 r3d_18(weights=R3D_18_Weights.DEFAULT)
@@ -509,9 +511,9 @@ Run this lightweight audit before requesting a GPU:
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
 
-python scripts/audit_sta_data.py
+"$PYTHON" scripts/audit_sta_data.py
 ```
 
 Acceptance criteria:
@@ -549,8 +551,8 @@ Every job must:
 
 ```bash
 module load cluster/wice/gpu_p100
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+test -x "$PYTHON"
 export TORCH_HOME="$VSC_DATA/torch-cache"
 cd "$VSC_DATA/R-D_Group2"
 ```

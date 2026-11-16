@@ -13,8 +13,11 @@
 set -euo pipefail
 
 module load cluster/wice/gpu_a100
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+    printf 'Missing rd_epic_cuda Python: %s\n' "$PYTHON" >&2
+    exit 1
+fi
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 export PYTHONUNBUFFERED=1
@@ -26,14 +29,14 @@ cd "$VSC_DATA/R-D_Group2"
 git rev-parse HEAD
 nvidia-smi
 
-python -m unittest \
+"$PYTHON" -m unittest \
   tests.test_sta_feature_extraction \
   tests.test_sta_sampling_regressions -v
 
 CHECK_ROOT="results/sta_reader_check_${SLURM_JOB_ID}"
 
 started=$SECONDS
-python scripts/extract_sta_features.py \
+"$PYTHON" scripts/extract_sta_features.py \
   --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
   --split train \
   --output-root "$CHECK_ROOT" \
@@ -46,12 +49,12 @@ python scripts/extract_sta_features.py \
 
 printf 'Extraction seconds: %d\n' "$((SECONDS - started))"
 
-python scripts/inspect_sta_features.py \
+"$PYTHON" scripts/inspect_sta_features.py \
   --feature-root "$CHECK_ROOT" \
   --split train \
   --check-all
 
-python scripts/verify_sta_extraction.py \
+"$PYTHON" scripts/verify_sta_extraction.py \
   --feature-root "$CHECK_ROOT" \
   --split train \
   --events 64 \

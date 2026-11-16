@@ -15,8 +15,11 @@ set -euo pipefail
 
 module load cluster/wice/gpu_p100
 
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+    printf 'Missing rd_epic_cuda Python: %s\n' "$PYTHON" >&2
+    exit 1
+fi
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 
@@ -25,11 +28,11 @@ cd "$VSC_DATA/R-D_Group2"
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $SLURMD_NODENAME"
 echo "Working directory: $(pwd)"
-echo "Python: $(which python)"
+echo "Python: $PYTHON"
 
 nvidia-smi
 
-python -c "
+"$PYTHON" -c "
 import torch
 import torchvision
 
@@ -47,11 +50,11 @@ print(
 )
 "
 
-python -m unittest discover -s tests -v
+"$PYTHON" -m unittest discover -s tests -v
 
-python scripts/evaluate_sta_model_0.py
+"$PYTHON" scripts/evaluate_sta_model_0.py
 
-python scripts/extract_sta_features.py \
+"$PYTHON" scripts/extract_sta_features.py \
   --split train \
   --limit 32 \
   --output-root results/vsc_smoke_features \
@@ -60,7 +63,7 @@ python scripts/extract_sta_features.py \
   --workers 4 \
   --shard-size 32
 
-python scripts/inspect_sta_features.py \
+"$PYTHON" scripts/inspect_sta_features.py \
   --feature-root results/vsc_smoke_features \
   --split train \
   --check-all

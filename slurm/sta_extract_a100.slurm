@@ -29,8 +29,11 @@ case "$SPLIT" in
 esac
 
 module load cluster/wice/gpu_a100
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+    printf 'Missing rd_epic_cuda Python: %s\n' "$PYTHON" >&2
+    exit 1
+fi
 export TORCH_HOME="$VSC_DATA/torch-cache"
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=4
@@ -43,7 +46,7 @@ printf 'Git commit: %s\n' "$(git rev-parse HEAD)"
 nvidia-smi
 
 started=$SECONDS
-python scripts/extract_sta_features.py \
+"$PYTHON" scripts/extract_sta_features.py \
   --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
   --split "$SPLIT" \
   --output-root data/processed/sta_features \
@@ -55,12 +58,12 @@ python scripts/extract_sta_features.py \
   --resume
 printf 'Extraction seconds: %d\n' "$((SECONDS - started))"
 
-python scripts/inspect_sta_features.py \
+"$PYTHON" scripts/inspect_sta_features.py \
   --feature-root data/processed/sta_features \
   --split "$SPLIT" \
   --check-all
 
-python scripts/verify_sta_extraction.py \
+"$PYTHON" scripts/verify_sta_extraction.py \
   --feature-root data/processed/sta_features \
   --split "$SPLIT" \
   --events "$EVENTS" \

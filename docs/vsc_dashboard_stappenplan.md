@@ -52,14 +52,14 @@ Log via je normale methode in op de wICE-loginomgeving. Voer daar uit:
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
-python --version
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+test -x "$PYTHON"
+"$PYTHON" --version
 test -f src/run_monitor.py
 test -f scripts/submit_monitored.py
 grep RND_OUTPUT_ROOT slurm/sta_train_p100.slurm
 printf '%s\n' "$VSC_DATA/R-D_Group2"
-command -v python
+printf '%s\n' "$PYTHON"
 ```
 
 Bewaar de laatste twee paden: de **absolute projectdirectory** en het absolute
@@ -115,7 +115,7 @@ variabelen verschillend.
 
 ```powershell
 cd C:\Users\Emiel\Documents\RnD\R-D_Group2
-python scripts/dashboard.py --host vsc-wice --remote-root /ABSOLUTE/VSC_DATA/R-D_Group2 --remote-python /ABSOLUTE/VSC_DATA/miniconda3/envs/rd_epic_cuda/bin/python
+python scripts/dashboard.py --host vsc-wice --remote-root /ABSOLUTE/VSC_DATA/R-D_Group2 --remote-python /ABSOLUTE/VSC_DATA/conda_envs/rd_epic_cuda/bin/python
 ```
 
 Open <http://127.0.0.1:8790>. Er wordt één snapshot opgehaald bij het starten.
@@ -126,7 +126,7 @@ dat veroorzaakt geen extra Slurm-verzoeken.
 Voor automatisch verversen tijdens een trainingssessie:
 
 ```powershell
-python scripts/dashboard.py --host vsc-wice --remote-root /ABSOLUTE/VSC_DATA/R-D_Group2 --remote-python /ABSOLUTE/VSC_DATA/miniconda3/envs/rd_epic_cuda/bin/python --interval 120
+python scripts/dashboard.py --host vsc-wice --remote-root /ABSOLUTE/VSC_DATA/R-D_Group2 --remote-python /ABSOLUTE/VSC_DATA/conda_envs/rd_epic_cuda/bin/python --interval 120
 ```
 
 Gebruik dit alleen zolang je actief kijkt en volgens de lokale clusterafspraken.
@@ -141,15 +141,14 @@ In je gewone VSC-terminal, vanuit de checkout:
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
-python scripts/submit_monitored.py --model mean_pool
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+"$PYTHON" scripts/submit_monitored.py --model mean_pool
 ```
 
 Voor GRU:
 
 ```bash
-python scripts/submit_monitored.py --model gru
+"$PYTHON" scripts/submit_monitored.py --model gru
 ```
 
 **Elke uitvoering verstuurt één echte GPU-job en gebruikt de normale projectcredits.**

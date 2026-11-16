@@ -16,7 +16,10 @@ def main():
     parser.add_argument("--model", choices=["mean_pool", "gru"], required=True)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    if root != Path(os.environ.get("VSC_DATA", "/missing")) / "R-D_Group2":
+    expected_root = (
+        Path(os.environ.get("VSC_DATA", "/missing")) / "R-D_Group2"
+    ).resolve()
+    if root != expected_root:
         parser.error("The existing P100 script expects this checkout at $VSC_DATA/R-D_Group2")
     run_id = time.strftime("%Y%m%d-%H%M%S") + "-" + args.model + "-" + uuid.uuid4().hex[:8]
     directory = root / "results/runs" / run_id
