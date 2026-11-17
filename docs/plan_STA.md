@@ -2,7 +2,9 @@
 
 ## Summary
 
-Model 0 is complete and committed. It predicts training-label frequencies without reading video and obtains an Action MT5R of `0.0027`. The next objective is to build two video-based models using exactly the same split and evaluator:
+Model 0 and both video baselines are complete and evaluated. Model 0 predicts
+training-label frequencies without reading video and obtains an Action MT5R of
+`0.0027`. Models 1 and 2 use exactly the same split and evaluator:
 
 | Model | Input | Temporal processing | Purpose |
 |---|---|---|---|
@@ -10,7 +12,8 @@ Model 0 is complete and committed. It predicts training-label frequencies withou
 | Model 1 | Frozen R3D-18 features | Masked mean pooling | Test whether video helps |
 | Model 2 | Same frozen R3D-18 features | Masked GRU | Test whether temporal order helps |
 
-Both new models will use cached features. R3D-18 processes the raw videos once on VSC; subsequent model training will be fast and will not repeatedly decode the videos.
+Both video models use cached features. R3D-18 processed the raw videos once on
+VSC; subsequent model training was fast and did not repeatedly decode the videos.
 
 The pipeline will retain every event:
 
@@ -23,10 +26,14 @@ The current split contains:
 
 | Split | Total | Full five seconds | Partial context | No context |
 |---|---:|---:|---:|---:|
-| Train | 59,767 | 58,895 | 796 | 76 |
-| Validation | 7,450 | 7,307 | 119 | 24 |
+| Train | 59,767 | 59,041 | 650 | 76 |
+| Validation | 7,450 | 7,333 | 93 | 24 |
 
-## Current progress — 12 November 2026
+The full-mask counts follow stored segment validity. A segment clipped at the
+start of a video remains valid when it still contains usable frames; the older
+`58,895` and `7,307` values counted complete five-second windows instead.
+
+## Current progress — 17 November 2026
 
 ### Cached features and models
 
@@ -116,19 +123,24 @@ The current split contains:
   epoch, checks fallback accounting and all four output artifacts, and reloads
   both checkpoints.
 
-### Verification and next work
+### Verification and remaining work
 
-- All 15 focused loader/training/orchestration/entry-point tests pass in
-  `rd_lab`.
-- The complete repository suite passes: 69 tests in total.
-- The latest committed and pushed Git commit visible during this update is
-  `568d1f3`. The training entry point, its integration tests and this plan update
-  remain uncommitted as requested.
-- No standalone training run or performance experiment has been executed. The
-  small synthetic integration fixtures establish correctness, not model
-  performance.
-- Video extraction, VSC jobs, submission generation and the standalone evaluation
-  command remain later tasks and have not been started.
+- Full feature verification passes for all `59,767` training and `7,450`
+  validation events. It reports `76` and `24` no-context fallbacks respectively,
+  zero video errors, valid shard sizes and finite `float32` dataset reads.
+- Reported full mean-pooling and GRU runs have completed and their best
+  checkpoints reload under the independent evaluator.
+- The GRU result was reproduced exactly by a second deterministic seed-42 run.
+  This confirms repeatability of the configured experiment, not variation across
+  independent seeds.
+- The VSC jobs now call
+  `$VSC_DATA/conda_envs/rd_epic_cuda/bin/python` directly. They do not load
+  Miniforge, bootstrap Miniconda or depend on `conda activate`. Commit `08cdf39`
+  records this correction and also resolves the `/data/...` versus
+  `/vsc-hard-mounts/...` project-path aliases in the monitored submit wrapper.
+- The monitoring tests pass after the environment correction. Full training,
+  evaluation and monitoring are complete; final all-label retraining and the
+  hidden-test submission remain future work.
 
 ## 1. Build and validate the shared STA feature pipeline
 
@@ -473,7 +485,9 @@ Matplotlib:       3.9
 TQDM:             4.66
 ```
 
-Use the `pytorch`, `nvidia` and `conda-forge` channels. CUDA 11.8 is chosen for compatibility with the P100 GPUs.
+The existing VSC environment uses CUDA 11.8 for compatibility with the P100
+GPUs. Its interpreter is used directly so jobs do not depend on a particular
+Conda distribution or shell activation.
 
 On the VSC login node:
 
@@ -481,12 +495,9 @@ On the VSC login node:
 cd "$VSC_DATA/R-D_Group2"
 git pull --ff-only
 
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda config --append envs_dirs "$VSC_DATA/conda_envs"
-conda config --append pkgs_dirs "$VSC_SCRATCH/conda_pkgs"
-conda env create -f environment-vsc.yml
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+test -x "$PYTHON"
+"$PYTHON" -c "import torch; print(torch.__version__)"
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 mkdir -p "$TORCH_HOME"
@@ -495,7 +506,7 @@ mkdir -p "$TORCH_HOME"
 Download and verify the encoder weights once:
 
 ```bash
-python -c "
+"$PYTHON" -c "
 import torch
 from torchvision.models.video import r3d_18, R3D_18_Weights
 r3d_18(weights=R3D_18_Weights.DEFAULT)
@@ -512,9 +523,9 @@ Run this lightweight audit before requesting a GPU:
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
 
-python scripts/audit_sta_data.py
+"$PYTHON" scripts/audit_sta_data.py
 ```
 
 Acceptance criteria:
@@ -552,9 +563,8 @@ Every job must:
 
 ```bash
 module load cluster/wice/gpu_p100
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+test -x "$PYTHON"
 export TORCH_HOME="$VSC_DATA/torch-cache"
 cd "$VSC_DATA/R-D_Group2"
 ```
@@ -683,17 +693,19 @@ GPUs:      1
 CPUs:      4
 ```
 
-Submit:
+Submit the reported run through the isolated monitoring wrapper:
 
 ```bash
-sbatch slurm/sta_train_p100.slurm mean_pool
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+"$PYTHON" scripts/submit_monitored.py --model mean_pool
 ```
 
-After completion:
+The wrapper evaluates the selected checkpoint automatically. A manual repeat can
+still be run with:
 
 ```bash
-python scripts/evaluate_sta_model.py \
-  --checkpoint results/checkpoints/mean_pool/best.pt
+"$PYTHON" scripts/evaluate_sta_model.py \
+  --checkpoint results/runs/RUN_ID/checkpoints/mean_pool/best.pt
 ```
 
 Acceptance criteria:
@@ -709,17 +721,71 @@ Acceptance criteria:
 Submit:
 
 ```bash
-sbatch slurm/sta_train_p100.slurm gru
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+"$PYTHON" scripts/submit_monitored.py --model gru
 ```
 
-Evaluate identically:
+The wrapper evaluates automatically. A manual repeat is:
 
 ```bash
-python scripts/evaluate_sta_model.py \
-  --checkpoint results/checkpoints/gru/best.pt
+"$PYTHON" scripts/evaluate_sta_model.py \
+  --checkpoint results/runs/RUN_ID/checkpoints/gru/best.pt
 ```
 
 Model 2 is successful if it trains correctly and produces a reproducible result. It is a research comparison, so it is not required to outperform Model 1; a negative result must be reported honestly.
+
+### Executed full-baseline results — 15-16 November 2026
+
+The reported runs used the fixed shared configuration: seed `42`, AdamW,
+learning rate `0.001`, weight decay `0.0001`, dropout `0.3`, batches of `256`
+for training and `512` for validation, a 30-epoch maximum and early-stopping
+patience `5`.
+
+| Run | Model | Best epoch | Verb MT5R | Noun MT5R | Action MT5R |
+|---|---|---:|---:|---:|---:|
+| `20261115-152555-mean_pool-0cc225f3` | Mean pool | 6 | 0.1058 | 0.0767 | **0.0150** |
+| `20261116-141102-gru-7e415c5d` | GRU reproduction | 9 | 0.1075 | 0.0563 | 0.0122 |
+| `20261116-141325-gru-cf070b53` | GRU reported run | 9 | 0.1075 | 0.0563 | 0.0122 |
+
+The reported GRU job was Slurm job `62715163`. It completed 14 epochs: epoch 9
+was best, followed by five non-improving epochs that triggered early stopping.
+Training took 69 seconds on one P100. Independent evaluation covered all `7,450`
+validation events, used neural predictions for `7,426`, used the Model 0 fallback
+for the expected `24`, found `3,568` valid action classes and passed all finite-
+metric and coverage checks. Its additional metrics were:
+
+| Metric | Verb | Noun | Action |
+|---|---:|---:|---:|
+| Top-1 accuracy | 0.2329 | 0.0752 | 0.0118 |
+| Top-5 accuracy | 0.6638 | 0.2226 | 0.0549 |
+| Class-mean Top-5 recall | 0.1075 | 0.0563 | 0.0122 |
+
+The two GRU directories contain identical metrics because the experiment is
+deterministic and both used seed `42`; they are repeated executions of the same
+configuration rather than two independent-seed estimates.
+
+The mean-pooling model is selected by validation Action MT5R. The GRU improves
+Verb MT5R slightly (`0.1058` to `0.1075`) but reduces Noun MT5R (`0.0767` to
+`0.0563`), producing an Action MT5R about `18.7%` lower than mean pooling. This
+is a valid negative result: temporal ordering in the five frozen R3D-18 feature
+vectors did not improve the primary metric, and recurrent compression likely
+discarded static object evidence retained by mean pooling.
+
+### VSC environment incident and correction
+
+GRU job `62707239` failed after 19 seconds before training because the batch job
+resolved the central Miniforge base interpreter, which did not contain PyTorch.
+Its log reported `ModuleNotFoundError: No module named 'torch'`. The successful
+mean-pooling job showed the actual environment interpreter to be
+`$VSC_DATA/conda_envs/rd_epic_cuda/bin/python` with PyTorch `2.5.1+cu118`.
+
+Commit `689ad45` first removed the central Miniforge module. After verifying the
+real VSC paths, commit `08cdf39` made the final robust correction: every Slurm
+entry point invokes the `rd_epic_cuda` interpreter explicitly, checks that it is
+executable and never relies on a Conda distribution or shell activation. The
+monitored submit wrapper now resolves both sides of its project-root comparison,
+so the logical `/data/leuven/...` path and its `/vsc-hard-mounts/...` target are
+treated as the same checkout.
 
 ### Monitoring and troubleshooting
 
@@ -740,21 +806,53 @@ Typical responses:
 - Missing video: run the data audit and repair the dataset before continuing.
 - Disk quota error: inspect feature and duplicate video directories with `du`; do not delete anything until exact duplicates are confirmed.
 
+### Dashboard verification
+
+The Training Observatory UI has been rendered successfully, but the inspected
+screenshot is the synthetic demonstration, not a live VSC snapshot. This is
+confirmed by `DEMO — synthetic data`, job `84231`, run `demo-gru`, node
+`demo-node`, output path `/DEMO/results/runs/demo-gru` and Git commit
+`synthetic-demo`. The four summary cards and curves are correct for the demo
+fixture, but they must not be interpreted as experiment results.
+
+Keep demo and real records in separate SQLite databases. Start the real local
+dashboard with a working SSH alias or `user@login-host` and the verified VSC
+paths:
+
+```powershell
+python scripts/dashboard.py `
+  --host YOUR_VSC_SSH_ALIAS `
+  --remote-root /data/leuven/397/vsc39706/R-D_Group2 `
+  --remote-python /data/leuven/397/vsc39706/conda_envs/rd_epic_cuda/bin/python `
+  --db results/monitoring/vsc.sqlite3 `
+  --interval 120
+```
+
+The real dashboard is confirmed only when the header reports cluster `wice` and
+the job list contains actual Slurm IDs such as `62706675` and `62715163`, rather
+than `842xx` demo IDs. If non-interactive SSH is unavailable, generate a snapshot
+on VSC with `scripts/monitor_snapshot.py`, copy the JSON to the laptop and open it
+with `--snapshot` while retaining the separate `vsc.sqlite3` database.
+
 ## 5. Model selection, final training and hidden-test submission
 
 ### Compare the three models
 
-Create one generated comparison table:
+Generated comparison table:
 
 | Model | Video | Temporal order | Verb MT5R | Noun MT5R | Action MT5R |
 |---|---:|---:|---:|---:|---:|
 | Frequency prior | No | No | 0.0694 | 0.0287 | 0.0027 |
-| R3D-18 mean pooling | Yes | No | result | result | result |
-| R3D-18 GRU | Yes | Yes | result | result | result |
+| R3D-18 mean pooling | Yes | No | 0.1058 | 0.0767 | **0.0150** |
+| R3D-18 GRU | Yes | Yes | 0.1075 | 0.0563 | 0.0122 |
 
 Select the final model using validation Action MT5R only.
 
 Do not select using hidden-test feedback.
+
+The selected architecture is Model 1, masked mean pooling. It improves Action
+MT5R over Model 0 by approximately `5.5x` and exceeds the GRU by approximately
+`23%` relative to the GRU score (`0.0150 / 0.0122 - 1`).
 
 ### Retrain on all provided annotations
 
@@ -838,14 +936,14 @@ Add tests for:
 
 ### Integration gates
 
-1. Existing Model 0 tests and metrics remain unchanged.
-2. Local eight-event extraction passes.
-3. VSC 32-event GPU smoke job completes.
-4. Both models overfit a tiny feature subset sufficiently to show decreasing loss.
-5. Full feature extraction covers every split row.
-6. Model 1 beats Model 0 on Action MT5R.
-7. Model 2 produces a valid comparable result.
-8. Final submission passes the local validator before Codabench upload.
+1. [x] Existing Model 0 tests and metrics remain unchanged.
+2. [x] Local eight-event extraction passes.
+3. [x] VSC GPU smoke and reader checks complete.
+4. [x] Both architectures pass training-loop and decreasing-loss checks.
+5. [x] Full feature extraction covers all `59,767` train and `7,450` validation rows.
+6. [x] Model 1 beats Model 0 on Action MT5R (`0.0150` versus `0.002742`).
+7. [x] Model 2 produces a valid, independently evaluated and reproducible result.
+8. [ ] Final all-label retraining and submission validation remain to be completed before Codabench upload.
 
 ## Team division and working order
 

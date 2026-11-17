@@ -13,8 +13,7 @@
 set -euo pipefail
 
 module load cluster/wice/gpu_a100
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 conda activate rd_epic_cuda
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
@@ -35,7 +34,7 @@ CHECK_ROOT="results/sta_reader_check_${SLURM_JOB_ID}"
 
 started=$SECONDS
 python scripts/extract_sta_features.py \
-  --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
+  --raw-dir "$VSC_SCRATCH/epic_sta/raw_fixed" \
   --split train \
   --output-root "$CHECK_ROOT" \
   --limit 64 \

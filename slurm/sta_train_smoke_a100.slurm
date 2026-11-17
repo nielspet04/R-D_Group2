@@ -28,9 +28,11 @@ case "$MODEL" in
 esac
 
 module load cluster/wice/gpu_a100
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate rd_epic_cuda
+PYTHON="$VSC_DATA/conda_envs/rd_epic_cuda/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+    printf 'Missing rd_epic_cuda Python: %s\n' "$PYTHON" >&2
+    exit 1
+fi
 
 export TORCH_HOME="$VSC_DATA/torch-cache"
 export PYTHONUNBUFFERED=1
@@ -49,11 +51,11 @@ printf 'Job ID: %s\n' "$SLURM_JOB_ID"
 printf 'Model: %s\n' "$MODEL"
 printf 'Purpose: one-epoch correctness smoke test; not a reported result\n'
 printf 'Host: %s\n' "$(hostname)"
-printf 'Python: %s\n' "$(command -v python)"
+printf 'Python: %s\n' "$PYTHON"
 printf 'Git commit: %s\n' "$(git rev-parse HEAD)"
 nvidia-smi
 
-python - <<'PY'
+"$PYTHON" - <<'PY'
 import torch
 
 assert torch.cuda.is_available(), "CUDA is unavailable"
@@ -67,7 +69,7 @@ test -s "$FEATURE_ROOT/validation/manifest.csv"
 test -s "$ANNOTATIONS"
 
 started=$SECONDS
-python scripts/train_sta.py \
+"$PYTHON" scripts/train_sta.py \
   --model "$MODEL" \
   --feature-root "$FEATURE_ROOT" \
   --annotations "$ANNOTATIONS" \
@@ -76,14 +78,14 @@ python scripts/train_sta.py \
   --smoke-test-epochs 1
 printf 'Training and validation seconds: %d\n' "$((SECONDS - started))"
 
-python scripts/evaluate_sta_model.py \
+"$PYTHON" scripts/evaluate_sta_model.py \
   --checkpoint "$CHECKPOINT" \
   --feature-root "$FEATURE_ROOT" \
   --annotations "$ANNOTATIONS" \
   --output "$EVALUATION" \
   --device cuda
 
-python - "$EVALUATION" <<'PY'
+"$PYTHON" - "$EVALUATION" <<'PY'
 import json
 import math
 import sys

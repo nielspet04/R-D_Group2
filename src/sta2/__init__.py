@@ -1,0 +1,1 @@
+"""STA2 video inputs and frozen backbone representations."""

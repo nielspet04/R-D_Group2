@@ -14,8 +14,7 @@
 set -euo pipefail
 
 module load cluster/wice/gpu_h100
-module load Miniforge3/25.3.0-3
-source "$(conda info --base)/etc/profile.d/conda.sh"
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 conda activate rd_epic_cuda
 export TORCH_HOME="$VSC_DATA/torch-cache"
 export PYTHONUNBUFFERED=1
@@ -55,7 +54,7 @@ python scripts/evaluate_sta_model_0.py
 
 started=$SECONDS
 python scripts/extract_sta_features.py \
-  --raw-dir "$VSC_SCRATCH/epic_sta/raw" \
+  --raw-dir "$VSC_SCRATCH/epic_sta/raw_fixed" \
   --split train \
   --output-root results/vsc_h100_smoke_features \
   --device cuda \
