@@ -1,4 +1,4 @@
-"""Local SQLite dashboard. Python standard library only; VSC access uses SSH."""
+"""SQLite dashboard for SSH, direct VSC, or offline snapshot collection."""
 from __future__ import annotations
 
 import argparse
@@ -9,6 +9,7 @@ from pathlib import Path
 import shlex
 import sqlite3
 import subprocess
+import sys
 import threading
 import time
 
@@ -80,6 +81,27 @@ class Collector:
             self.last_attempt = time.time()
             if self.args.snapshot:
                 snapshot = json.loads(self.args.snapshot.read_text(encoding="utf-8"))
+            elif self.args.local_root:
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(ROOT / "scripts/monitor_snapshot.py"),
+                        "--root",
+                        str(self.args.local_root),
+                        "--cluster",
+                        self.args.cluster,
+                    ],
+                    text=True,
+                    encoding="utf-8",
+                    capture_output=True,
+                    timeout=65,
+                )
+                if result.returncode:
+                    raise RuntimeError(
+                        result.stderr.strip()
+                        or f"Local collector exit {result.returncode}"
+                    )
+                snapshot = json.loads(result.stdout)
             else:
                 command = shlex.join([self.args.remote_python, "-", "--root", self.args.remote_root, "--cluster", self.args.cluster])
                 result = subprocess.run(["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
@@ -109,6 +131,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--host", help="Existing SSH alias or user@login-host")
+    source.add_argument(
+        "--local-root",
+        type=Path,
+        help="Collect directly on VSC; use with VS Code port forwarding",
+    )
     source.add_argument("--snapshot", type=Path, help="Import a JSON snapshot (offline/demo)")
     parser.add_argument("--remote-root", help="Absolute project path on VSC")
     parser.add_argument("--remote-python", default="python3", help="Python >=3.9 on VSC; absolute path allowed")
@@ -119,6 +146,12 @@ def main():
     args = parser.parse_args()
     if args.host and (not args.remote_root or not args.remote_root.startswith("/") or args.host.startswith("-")):
         parser.error("--host requires --remote-root with an absolute Linux path")
+    if args.local_root:
+        args.local_root = args.local_root.resolve()
+        if not args.local_root.is_dir():
+            parser.error("--local-root must be an existing project directory")
+        if args.remote_root:
+            parser.error("--remote-root is only valid with --host")
     if args.interval != 0 and args.interval < 60:
         parser.error("--interval must be 0 or at least 60 seconds")
     args.db.parent.mkdir(parents=True, exist_ok=True)

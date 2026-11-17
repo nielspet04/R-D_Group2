@@ -88,6 +88,14 @@ python scripts/dashboard.py --snapshot results/monitoring/demo.json --db results
 
 Open `http://127.0.0.1:8790`. This example uses synthetic data only.
 
+When the repository is open through VS Code Remote SSH, run the dashboard in
+the remote VSC terminal and forward port `8790` in VS Code:
+
+```bash
+python scripts/dashboard.py --local-root "$PWD" \
+  --db results/monitoring/vsc.sqlite3 --interval 120
+```
+
 ## Working conventions
 
 - Name notebooks in execution order, for example

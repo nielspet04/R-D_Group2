@@ -109,6 +109,40 @@ officiële toegangsprocedure gecontroleerd hebt, niet door host-keycontrole uit 
 
 ## 4. Start het echte dashboard op je laptop
 
+### Aanbevolen als je al via VS Code Remote SSH verbonden bent
+
+De fout `ssh: connect to host ... port 22: Connection timed out` betekent dat
+je laptop de VSC-loginhost niet rechtstreeks bereikt. De dashboardserver werkt
+dan wel, maar de collector geraakt niet bij VSC. Dit gebeurt vóór authenticatie;
+gebruikersnaam, remote Python en remote paden zijn op dat moment nog niet getest.
+
+Gebruik in dit geval de bestaande VS Code Remote SSH-verbinding. Open de
+**remote terminal** in het VS Code-venster dat met VSC verbonden is en voer uit:
+
+```bash
+cd /data/leuven/397/vsc39706/R-D_Group2
+/data/leuven/397/vsc39706/conda_envs/rd_epic_cuda/bin/python scripts/dashboard.py \
+  --local-root "$PWD" \
+  --db results/monitoring/vsc.sqlite3 \
+  --interval 120
+```
+
+Als jouw omgeving op een andere plaats staat, is activeren niet nodig voor het
+dashboard zolang `python --version` minstens 3.9 toont. Het dashboard gebruikt
+alleen de Python-standaardbibliotheek.
+
+Open daarna in VS Code de **Ports**-weergave, kies **Forward a Port**, voer
+`8790` in en open de lokale URL die VS Code toont. Meestal is dat
+<http://127.0.0.1:8790>, maar VS Code kan een andere lokale poort kiezen.
+Laat de remote terminal open. Stop met Ctrl+C. De Slurm-trainingen blijven lopen.
+
+Deze modus voert de collector direct op de VSC-loginomgeving uit en opent geen
+tweede SSH-verbinding. De webserver luistert alleen op VSC-loopback en is via
+de bestaande tunnel bereikbaar. Gebruik `--interval 120` alleen tijdens een
+actieve monitorsessie; elke update doet één `squeue`- en één `sacct`-aanroep.
+
+### Alternatief: dashboard lokaal met een aparte SSH-verbinding
+
 Vervang de twee voorbeeldpaden door de paden uit stap 2. Gebruik absolute Linux-paden;
 typ hier geen letterlijke `$VSC_DATA`, want PowerShell en de remote shell behandelen
 variabelen verschillend.

@@ -5,14 +5,48 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
+from argparse import Namespace
 
-from scripts.dashboard import ingest, read_data
+from scripts.dashboard import Collector, ingest, read_data
 from scripts.monitor_snapshot import collect
 from scripts import submit_monitored
 from src.run_monitor import RunMonitor
 
 
 class MonitoringTests(unittest.TestCase):
+    def test_direct_vsc_collection_does_not_open_ssh(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database = root / "dashboard.sqlite3"
+            snapshot = {
+                "collected_at": 10,
+                "cluster": "wice",
+                "errors": [],
+                "jobs": [{"job_id": "123", "state": "RUNNING"}],
+                "runs": [],
+            }
+            args = Namespace(
+                snapshot=None,
+                local_root=root,
+                cluster="wice",
+                db=database,
+                interval=120,
+                host=None,
+                remote_python=None,
+                remote_root=None,
+            )
+            completed = subprocess.CompletedProcess(
+                [], 0, json.dumps(snapshot), ""
+            )
+            with patch(
+                "scripts.dashboard.subprocess.run", return_value=completed
+            ) as execute:
+                Collector(args).refresh()
+            command = execute.call_args.args[0]
+            self.assertNotIn("ssh", command)
+            self.assertIn("monitor_snapshot.py", command[1])
+            self.assertEqual(read_data(database)["jobs"][0]["job_id"], "123")
+
     def test_submission_exports_isolated_output_and_records_job(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "R-D_Group2"
