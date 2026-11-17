@@ -1,0 +1,39 @@
+{
+  "vjepa_url": "https://github.com/facebookresearch/vjepa2",
+  "vjepa_revision": "204698b45b3712590f06245fbfba32d3be539812",
+  "jfaa_url": "https://github.com/CorrineQiu/JFAA",
+  "jfaa_revision": "2b0bc77023b0bc822e76eb2004ecd69c07ac8f21",
+  "files": {
+    "app/vjepa_2_1/models/vision_transformer.py": {
+      "source_sha256": "d2932eabeba684d8f558302a13cfd4be70a0170ee5112f5a794652d0a29089b9",
+      "vendored_sha256": "86af2ed9e60441a74d030efd3d779eb8987edb3a9543369cfd3ac8abc8eef776"
+    },
+    "app/vjepa_2_1/models/predictor.py": {
+      "source_sha256": "30111720eb90c6dcdde44521cea53cc736020f984e5573150fd3dc7b4acc05d8",
+      "vendored_sha256": "59856998c5e4a7547b7c6963b9ee2d05ea933e56737c6d1ba8cbb60a8b8ee78f"
+    },
+    "app/vjepa_2_1/models/utils/modules.py": {
+      "source_sha256": "64be6a87bd9f18d385f4e44186db3347d1665e18a1f0511d51d3b305531562e2",
+      "vendored_sha256": "64be6a87bd9f18d385f4e44186db3347d1665e18a1f0511d51d3b305531562e2"
+    },
+    "app/vjepa_2_1/models/utils/patch_embed.py": {
+      "source_sha256": "29e11ab97ab3ccdef107d6a7d0d7b374b58e712076cc3561f07b7e603c9b5165",
+      "vendored_sha256": "29e11ab97ab3ccdef107d6a7d0d7b374b58e712076cc3561f07b7e603c9b5165"
+    },
+    "src/masks/utils.py": {
+      "source_sha256": "833f111a0fa5ffdbd3a6412e2dace2517c3c178f49c14f8bb631d9f6a070dfd0",
+      "vendored_sha256": "833f111a0fa5ffdbd3a6412e2dace2517c3c178f49c14f8bb631d9f6a070dfd0"
+    },
+    "src/utils/tensors.py": {
+      "source_sha256": "782b58bd2af456e184750e5318ab773105108383f61b280fe4c7a90f46add2c8",
+      "vendored_sha256": "782b58bd2af456e184750e5318ab773105108383f61b280fe4c7a90f46add2c8"
+    }
+  },
+  "import_rewrites": {
+    "from src.masks.utils import": "from src.sta2.vendor.vjepa21.masks.utils import",
+    "from src.utils.tensors import": "from src.sta2.vendor.vjepa21.utils.tensors import",
+    "from app.vjepa_2_1.models.utils.modules import": "from src.sta2.vendor.vjepa21.models.utils.modules import",
+    "from app.vjepa_2_1.models.utils.patch_embed import": "from src.sta2.vendor.vjepa21.models.utils.patch_embed import"
+  },
+  "jfaa_config_sha256": "7705701213f0488c4288bbac946e867dedcef0c8cd19772c15bf0e165afe5e19"
+}
