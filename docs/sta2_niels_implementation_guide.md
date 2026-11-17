@@ -2,6 +2,21 @@
 
 Written 17 November 2026 against `docs/plan2.md` and project commit `99e330e`.
 
+**Implementation update (17 November):** The modules below now exist. The actual
+configuration lives at `configs/sta2/data_backbone.yaml` and controls the clip
+transform settings. The backbone uses memory-mapped checkpoint loading. Metadata
+generation automatically resumes matching manifests: verified successes are
+reused, failed/changed/corrupt entries are retried, and different annotation or
+video-info inputs require a separate output directory. Do not run two writers
+against the same metadata directory. The A100 smoke script uses private Miniconda
+and scratch data paths. `slurm/sta2_train.slurm` supports one/two/four GPUs but
+requires Emiel's training entrypoint and configuration. Set
+`STA2_PROFILE_ADAPTER=module:factory` when submitting the smoke job to profile
+Emiel's real head; this also verifies backbone state hashes before/after updates.
+Without an adapter, production head costs and state-update verification remain
+explicitly pending. The later sections preserve the original implementation
+walkthrough; use the current scripts' `--help` for supported options.
+
 This is a guide for implementing the work yourself. The new Python modules, environment, fixture generator and SLURM scripts described below have **not** been implemented by writing this document. Commands invoking those new files are acceptance commands to run **after** you create them. Existing utilities and upstream sources were inspected; the checkpoint has not been downloaded and no STA2 GPU pilot has run.
 
 Your deliverable is **event table → legal RGB clips → frozen observed/future tokens → measured GPU infrastructure**. Emiel implements the attention head, losses, training loop, evaluation and export. You supply launch infrastructure and independently audit coverage and the final export. A temporary diagnostic linear layer in a test is fine; it is not the production head.

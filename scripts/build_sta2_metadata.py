@@ -31,6 +31,60 @@ def sha256_file(path):
     return digest.hexdigest()
 
 
+def save_manifest(output, manifest):
+    temporary = output.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(manifest, indent=2) + "\n")
+    temporary.replace(output)
+
+
+def load_or_create_manifest(output, annotations, video_info, columns):
+    identity = {
+        "schema_version": 1,
+        "annotations_sha256": sha256_file(annotations),
+        "video_info_sha256": sha256_file(video_info),
+        "time_origin": "source PTS; verified zero origin",
+    }
+    if output.exists():
+        manifest = json.loads(output.read_text())
+        for key, expected in identity.items():
+            if manifest.get(key) != expected:
+                raise ValueError(
+                    f"Cannot resume: {key} changed. Use a separate output directory."
+                )
+        if manifest.get("metadata_columns", columns) != columns:
+            raise ValueError("Cannot resume with different metadata columns")
+    else:
+        manifest = {**identity, "videos": {}}
+    manifest["metadata_columns"] = columns
+    manifest["complete"] = False
+    return manifest
+
+
+def reusable_timeline(item, path, output_dir, supplied_fps):
+    """Only skip verified successes; retry failures and changed/corrupt files."""
+    if not item or item.get("status") != "ok" or path is None:
+        return False
+    try:
+        stat = path.stat()
+        if (stat.st_size != item["size_bytes"]
+                or stat.st_mtime_ns != item["mtime_ns"]
+                or Fraction(item["supplied_fps"]) != supplied_fps):
+            return False
+        timeline = output_dir / item["timeline"]
+        if sha256_file(timeline) != item["timeline_sha256"]:
+            return False
+        with np.load(timeline, allow_pickle=False) as saved:
+            pts = saved["pts"]
+            return bool(
+                pts.ndim == 1 and pts.dtype == np.int64
+                and len(pts) == item["frame_count"] and len(pts) >= 2
+                and pts[0] == 0 and np.all(np.diff(pts) > 0)
+                and Fraction(item["time_base"]) > 0
+            )
+    except (OSError, ValueError, KeyError, EOFError):
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
 
@@ -100,13 +154,11 @@ def main():
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    manifest = {
-        "schema_version": 1,
-        "annotations_sha256": sha256_file(args.annotations),
-        "video_info_sha256": sha256_file(args.video_info),
-        "time_origin": "source PTS; verified zero origin",
-        "videos": {},
-    }
+    output = args.output_dir / "manifest.json"
+    manifest = load_or_create_manifest(
+        output, args.annotations, args.video_info,
+        {"video_id": args.video_id_column, "fps": args.fps_column},
+    )
 
     for number, video_id in enumerate(video_ids, start=1):
         if video_id not in video_info:
@@ -127,6 +179,12 @@ def main():
         }
 
         path = videos.get(video_id)
+
+        if reusable_timeline(
+            manifest["videos"].get(video_id), path, args.output_dir, supplied_fps
+        ):
+            print(f"{number}/{len(video_ids)} {video_id}: reused", flush=True)
+            continue
 
         if path is None:
             item["error"] = "missing_file"
@@ -203,10 +261,12 @@ def main():
                     args.output_dir / f"{video_id}.npz"
                 )
 
-                np.savez_compressed(
-                    timeline_path,
-                    pts=pts,
-                )
+                # Rename only a fully written archive. The previous manifest is
+                # preserved on interruption and checksum failures are retried.
+                temporary_timeline = timeline_path.with_suffix(".npz.tmp")
+                with temporary_timeline.open("wb") as stream:
+                    np.savez_compressed(stream, pts=pts)
+                temporary_timeline.replace(timeline_path)
 
                 item.update(
                     status="ok",
@@ -226,13 +286,7 @@ def main():
 
         manifest["videos"][video_id] = item
 
-        output = args.output_dir / "manifest.json"
-        temporary = output.with_suffix(".json.tmp")
-
-        temporary.write_text(
-            json.dumps(manifest, indent=2) + "\n"
-        )
-        temporary.replace(output)
+        save_manifest(output, manifest)
 
         print(
             f"{number}/{len(video_ids)} "
@@ -240,7 +294,9 @@ def main():
             flush=True,
         )
 
+    manifest["complete"] = True
+    save_manifest(output, manifest)
+
 
 if __name__ == "__main__":
     main()
-    

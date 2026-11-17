@@ -6,6 +6,7 @@ from torch import nn
 from src.sta2.backbone import (
     FrozenAnticipationBackbone,
     load_strict,
+    state_sha256,
 )
 
 
@@ -76,6 +77,7 @@ class BackboneTests(unittest.TestCase):
             name: value.detach().clone()
             for name, value in backbone.state_dict().items()
         }
+        digest_before = state_sha256(backbone)
 
         tokens = backbone(
             self.input_video(),
@@ -128,6 +130,18 @@ class BackboneTests(unittest.TestCase):
             self.assertTrue(
                 torch.equal(before[name], value)
             )
+        self.assertEqual(digest_before, state_sha256(backbone))
+
+    def test_state_digest_detects_parameter_and_buffer_changes(self):
+        module = nn.Linear(2, 2)
+        module.register_buffer("counter", torch.tensor(0))
+        before = state_sha256(module)
+        with torch.no_grad():
+            module.weight.add_(1)
+        self.assertNotEqual(before, state_sha256(module))
+        before = state_sha256(module)
+        module.counter.add_(1)
+        self.assertNotEqual(before, state_sha256(module))
 
     def test_observed_only_bypasses_predictor(self):
         backbone = self.make_backbone(

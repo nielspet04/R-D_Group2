@@ -19,7 +19,7 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.sta2.backbone import FrozenAnticipationBackbone
+from src.sta2.backbone import FrozenAnticipationBackbone, state_sha256
 from src.sta2.data import (
     STAClipDataset,
     collate_sta_clips,
@@ -107,7 +107,7 @@ def main():
     parser.add_argument("--warmup-steps", type=int, default=10)
     parser.add_argument("--measured-steps", type=int, default=100)
     parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=None)
 
     parser.add_argument(
         "--observed-only",
@@ -138,12 +138,13 @@ def main():
     if not torch.cuda.is_bf16_supported():
         raise RuntimeError("This pilot requires BF16 support")
 
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
-
     config = yaml.safe_load(
         Path(args.config).read_text()
     )
+    args.seed = config.get("seed", 42) if args.seed is None else args.seed
+    config["seed"] = args.seed
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     events = load_events(
         args.annotations,
@@ -159,7 +160,9 @@ def main():
         split="train",
         training=True,
         seed=args.seed,
+        preprocessing=config.get("preprocessing"),
     )
+    config["preprocessing"] = dataset.transform.preprocessing
 
     indices = choose_pilot(
         dataset,
@@ -223,6 +226,7 @@ def main():
 
     device = torch.device("cuda:0")
 
+    print("Loading frozen backbone with memory-mapped checkpoint...", flush=True)
     backbone = (
         FrozenAnticipationBackbone.from_checkpoint(
             args.checkpoint,
@@ -273,6 +277,11 @@ def main():
             yield from loader
 
     batches = iter(infinite_batches())
+
+    # Outside timing: a full streaming digest checks values, including buffers.
+    if head is not None:
+        print("Hashing backbone state before head updates (outside timing)...", flush=True)
+    state_before = state_sha256(backbone) if head is not None else None
 
     def perform_step(batch):
         valid = batch["has_context"]
@@ -397,6 +406,14 @@ def main():
 
     torch.cuda.synchronize()
     elapsed = time.perf_counter() - started
+    # Capture memory statistics before verification transfers.
+    peak_allocated = torch.cuda.max_memory_allocated()
+    peak_reserved = torch.cuda.max_memory_reserved()
+    if head is not None:
+        print("Verifying backbone state after head updates (outside timing)...", flush=True)
+    state_after = state_sha256(backbone) if head is not None else None
+    if state_before is not None and state_before != state_after:
+        raise RuntimeError("Backbone state changed during head optimization")
 
     if any(
         parameter.requires_grad
@@ -424,9 +441,13 @@ def main():
         "gpu_total_bytes": properties.total_memory,
         "resident_after_warmup_bytes": resident_bytes,
         "peak_allocated_bytes":
-            torch.cuda.max_memory_allocated(),
+            peak_allocated,
         "peak_reserved_bytes":
-            torch.cuda.max_memory_reserved(),
+            peak_reserved,
+        "backbone_state_verified_unchanged": (
+            state_before == state_after if state_before is not None else None
+        ),
+        "backbone_state_sha256": state_after,
         "pilot_unique_events": len(indices),
         "pilot_status_counts": dict(unique_statuses),
         "measured_status_counts": dict(measured_statuses),
@@ -452,6 +473,7 @@ def main():
         "token_outputs": shapes,
     }
 
+    print("Recording checkpoint checksum; this reads the full checkpoint...", flush=True)
     provenance = {
         "git_commit": git_output("rev-parse", "HEAD"),
         "git_dirty": bool(
