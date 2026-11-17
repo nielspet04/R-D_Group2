@@ -243,6 +243,7 @@ class STAClipDataset(Dataset):
         split,
         training=False,
         seed=42,
+        preprocessing=None,
     ):
         self.events = events.to_dict("records")
         self.split = split
@@ -251,6 +252,7 @@ class STAClipDataset(Dataset):
         self.transform = ClipTransform(
             training=training,
             seed=seed,
+            preprocessing=preprocessing,
         )
 
         self.videos = index_videos(Path(raw_dir))
@@ -486,4 +488,3 @@ def collate_sta_clips(samples):
             ])
 
     return output
-    

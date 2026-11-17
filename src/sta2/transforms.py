@@ -15,15 +15,65 @@ CROP_SIZE = 384
 VALIDATION_SHORT_SIDE = 438
 
 
+def resolve_preprocessing(settings=None):
+    """Resolve supported settings so recorded configuration matches execution."""
+    resolved = {
+        "crop_size": CROP_SIZE,
+        "validation_short_side": VALIDATION_SHORT_SIDE,
+        "crop_scale": [0.5, 1.0],
+        "crop_ratio": [3 / 4, 4 / 3],
+        "flip_probability": 0.5,
+        "mean": list(MEAN),
+        "std": list(STD),
+        "interpolation": "bilinear",
+        "antialias": True,
+    }
+    if settings is not None:
+        unknown = set(settings) - set(resolved)
+        if unknown:
+            raise ValueError(f"Unknown preprocessing settings: {sorted(unknown)}")
+        resolved.update(settings)
+    if resolved["crop_size"] != 384:
+        raise ValueError("The production backbone contract requires crop_size=384")
+    short_side = resolved["validation_short_side"]
+    if not isinstance(short_side, int) or short_side < 384:
+        raise ValueError("validation_short_side must be an integer >= 384")
+    for name in ("crop_scale", "crop_ratio"):
+        values = list(resolved[name])
+        if len(values) != 2 or not all(math.isfinite(v) for v in values):
+            raise ValueError(f"Invalid {name}")
+        if not 0 < values[0] <= values[1]:
+            raise ValueError(f"Invalid {name}")
+        if name == "crop_scale" and values[1] > 1:
+            raise ValueError("Crop scale cannot exceed image area")
+        resolved[name] = values
+    for name in ("mean", "std"):
+        values = list(resolved[name])
+        if len(values) != 3 or not all(math.isfinite(v) for v in values):
+            raise ValueError(f"Invalid {name}")
+        if name == "std" and any(v <= 0 for v in values):
+            raise ValueError("Standard deviations must be positive")
+        resolved[name] = values
+    if not 0 <= resolved["flip_probability"] <= 1:
+        raise ValueError("flip_probability must be in [0,1]")
+    if resolved["interpolation"] != "bilinear":
+        raise ValueError("Only bilinear interpolation is currently supported")
+    if not isinstance(resolved["antialias"], bool):
+        raise ValueError("antialias must be a boolean")
+    return resolved
+
+
 class ClipTransform:
     def __init__(
         self,
         *,
         training: bool,
         seed: int = 42,
+        preprocessing=None,
     ):
         self.training = training
         self.seed = seed
+        self.preprocessing = resolve_preprocessing(preprocessing)
 
     def __call__(
         self,
@@ -57,14 +107,16 @@ class ClipTransform:
 
             height, width = x.shape[-2:]
             rectangle = None
+            scale_min, scale_max = self.preprocessing["crop_scale"]
+            ratio_min, ratio_max = self.preprocessing["crop_ratio"]
 
             for _ in range(10):
-                area = height * width * rng.uniform(0.5, 1.0)
+                area = height * width * rng.uniform(scale_min, scale_max)
 
                 ratio = math.exp(
                     rng.uniform(
-                        math.log(3 / 4),
-                        math.log(4 / 3),
+                        math.log(ratio_min),
+                        math.log(ratio_max),
                     )
                 )
 
@@ -94,12 +146,12 @@ class ClipTransform:
             if rectangle is None:
                 source_ratio = width / height
 
-                if source_ratio < 3 / 4:
+                if source_ratio < ratio_min:
                     crop_width = width
-                    crop_height = round(width / (3 / 4))
-                elif source_ratio > 4 / 3:
+                    crop_height = round(width / ratio_min)
+                elif source_ratio > ratio_max:
                     crop_height = height
-                    crop_width = round(height * (4 / 3))
+                    crop_width = round(height * ratio_max)
                 else:
                     crop_height = height
                     crop_width = width
@@ -117,19 +169,19 @@ class ClipTransform:
                 *rectangle,
                 size=[CROP_SIZE, CROP_SIZE],
                 interpolation=InterpolationMode.BILINEAR,
-                antialias=True,
+                antialias=self.preprocessing["antialias"],
             )
 
             # One flip decision applied to the entire clip.
-            if rng.random() < 0.5:
+            if rng.random() < self.preprocessing["flip_probability"]:
                 x = F.hflip(x)
 
         else:
             x = F.resize(
                 x,
-                VALIDATION_SHORT_SIDE,
+                self.preprocessing["validation_short_side"],
                 interpolation=InterpolationMode.BILINEAR,
-                antialias=True,
+                antialias=self.preprocessing["antialias"],
             )
 
             x = F.center_crop(
@@ -137,7 +189,11 @@ class ClipTransform:
                 [CROP_SIZE, CROP_SIZE],
             )
 
-        x = F.normalize(x, mean=MEAN, std=STD)
+        x = F.normalize(
+            x,
+            mean=self.preprocessing["mean"],
+            std=self.preprocessing["std"],
+        )
 
         # Final contract: [C,T,H,W].
         return x.permute(1, 0, 2, 3).contiguous()

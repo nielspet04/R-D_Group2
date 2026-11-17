@@ -3,10 +3,30 @@ import unittest
 import numpy as np
 import torch
 
-from src.sta2.transforms import ClipTransform
+from src.sta2.transforms import ClipTransform, resolve_preprocessing
 
 
 class TransformTests(unittest.TestCase):
+    def test_configuration_is_applied(self):
+        rgb = np.full((32, 20, 30, 3), 255, dtype=np.uint8)
+        transform = ClipTransform(training=False, preprocessing={
+            "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],
+            "validation_short_side": 400,
+        })
+        output = transform(rgb, epoch=0, row_index=0)
+        torch.testing.assert_close(output, torch.ones_like(output))
+        self.assertEqual(transform.preprocessing["validation_short_side"], 400)
+
+    def test_unsupported_configuration_is_rejected(self):
+        for settings in (
+            {"crop_size": 224}, {"validation_short_side": 200},
+            {"std": [0, 1, 1]}, {"interpolation": "nearest"},
+            {"crop_scale": [1.0, 0.5]}, {"unknown": True},
+            {"flip_probability": 2},
+        ):
+            with self.subTest(settings=settings), self.assertRaises(ValueError):
+                resolve_preprocessing(settings)
+
     def test_validation_shape_and_normalization(self):
         rgb = np.zeros(
             (32, 40, 60, 3),

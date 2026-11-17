@@ -1,9 +1,25 @@
 """Frozen V-JEPA 2.1 encoder/predictor adapter."""
 
 from contextlib import nullcontext
+import hashlib
 
 import torch
 from torch import nn
+
+
+def state_sha256(module):
+    """Hash parameters and buffers without retaining a second model copy.
+
+    Call outside the measured loop: copying the full backbone to CPU in chunks
+    is intentionally expensive, but verifies actual values rather than flags.
+    """
+    digest = hashlib.sha256()
+    for name, tensor in sorted(module.state_dict().items()):
+        digest.update(str((name, tuple(tensor.shape), tensor.dtype)).encode())
+        for chunk in tensor.detach().reshape(-1).split(1_000_000):
+            raw = chunk.cpu().contiguous().view(torch.uint8).numpy().tobytes()
+            digest.update(raw)
+    return digest.hexdigest()
 
 
 def load_strict(module, supplied):
@@ -128,6 +144,7 @@ class FrozenAnticipationBackbone(nn.Module):
             checkpoint_path,
             map_location="cpu",
             weights_only=True,
+            mmap=True,
         )
 
         load_strict(
@@ -319,4 +336,3 @@ class FrozenAnticipationBackbone(nn.Module):
             "observed_tokens": observed,
             "future_tokens": future,
         }
-        
