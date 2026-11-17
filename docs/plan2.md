@@ -11,7 +11,7 @@ Implement a **V-JEPA 2.1–based short-term action anticipation model**, using J
 
 The system will:
 
-1. Read legal pre-action video.
+1. Read legal pre-action video. test
 2. Extract representations with a frozen pretrained video encoder.
 3. Predict future latent representations using its pretrained predictor.
 4. Train an attention-based head to predict verbs and nouns, with an auxiliary action-pair objective.
