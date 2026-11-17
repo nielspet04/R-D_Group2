@@ -1,0 +1,51 @@
+schema_version: 1
+seed: 42
+
+preprocessing:
+  crop_size: 384
+  validation_short_side: 438
+  crop_scale: [0.5, 1.0]
+  crop_ratio: [0.75, 1.3333333333333333]
+  flip_probability: 0.5
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+  interpolation: bilinear
+  antialias: true
+
+backbone:
+  encoder_key: target_encoder
+  predictor_key: predictor
+
+  encoder:
+    img_size: 384
+    num_frames: 32
+    patch_size: 16
+    tubelet_size: 2
+    uniform_power: false
+    use_rope: true
+    use_sdpa: true
+    use_silu: false
+    wide_silu: true
+    img_temporal_dim_size: 1
+    interpolate_rope: true
+    n_output_distillation: 4
+
+  predictor:
+    img_size: 384
+    patch_size: 16
+    tubelet_size: 2
+    num_frames: 64
+    depth: 24
+    num_heads: 12
+    predictor_embed_dim: 384
+    num_mask_tokens: 8
+    uniform_power: false
+    use_mask_tokens: true
+    use_sdpa: true
+    use_silu: false
+    wide_silu: true
+    use_rope: true
+    img_temporal_dim_size: 1
+    n_output_distillation: 4
+    return_all_tokens: true
+    
