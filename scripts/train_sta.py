@@ -23,6 +23,7 @@ from src.evaluation import build_action_pairs  # noqa: E402
 from src.sta_features import STAFeatureDataset  # noqa: E402
 from src.sta_model_0 import FrequencyPriorSTA  # noqa: E402
 from src.sta_trainer import train_model  # noqa: E402
+from src.run_monitor import monitor  # noqa: E402
 from src.sta_training import (  # noqa: E402
     TrainingConfig,
     build_model,
@@ -231,7 +232,8 @@ def run_training(args: argparse.Namespace) -> dict:
 
 def main(argv: Sequence[str] | None = None) -> dict:
     args = parse_args(argv)
-    result = run_training(args)
+    with monitor:
+        result = run_training(args)
     fallback_events = result["best_validation_metrics"][
         "validation_fallback_events"
     ]

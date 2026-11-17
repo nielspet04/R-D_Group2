@@ -73,6 +73,21 @@ and feature output root unchanged when retrying existing failed shards with
 `--resume`. This reuse assumes the repaired dataset retains the same video IDs,
 timing and preprocessing; a changed video definition needs separate feature outputs.
 
+## Live VSC training dashboard
+
+The local Training Observatory combines your Slurm queue, epoch curves, GPU
+samples, configuration, and log tails in one SQLite-backed browser view.
+It uses SSH and the Python standard library; no webserver runs on VSC.
+Follow the detailed [VSC dashboard stappenplan](docs/vsc_dashboard_stappenplan.md)
+for the demo, SSH/MFA setup, monitored submission, and daily use.
+
+```bash
+python scripts/monitor_demo.py
+python scripts/dashboard.py --snapshot results/monitoring/demo.json --db results/monitoring/demo.sqlite3
+```
+
+Open `http://127.0.0.1:8790`. This example uses synthetic data only.
+
 ## Working conventions
 
 - Name notebooks in execution order, for example
