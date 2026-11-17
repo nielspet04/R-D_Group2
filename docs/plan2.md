@@ -235,13 +235,13 @@ Training:
 
 - One spatial transformation shared across all frames in a clip.
 - Random resized crop to 384 × 384.
-- Crop scale `[0.5, 1.0]`, aspect ratio `[0.75, 1.3333]`.
+- Crop scale `[0.5, 1.0]`, aspect ratio `[3/4, 4/3]` (use the exact ratios).
 - Horizontal flip probability `0.5`.
 - No temporal jitter into the anticipation gap.
 
 Validation and test:
 
-- Resize the shorter side to 384.
+- Resize the shorter side to `int(384 * 256 / 224) = 438`, using bilinear interpolation, then center crop as below. This follows the official single-view evaluation transform's resize-to-crop ratio. It retains a tighter spatial view than resizing the shorter side to 384; any accuracy benefit on the supplied downscaled videos remains to be measured.
 - Center crop to 384 × 384.
 - No random augmentation.
 
@@ -249,10 +249,12 @@ For all splits:
 
 - Convert BGR decoding output to RGB.
 - Convert pixels to floating point in `[0, 1]`.
-- Use the official checkpoint preprocessing normalization and record its numeric constants in the resolved configuration.
+- Use the official checkpoint preprocessing normalization: RGB mean `[0.485, 0.456, 0.406]`, standard deviation `[0.229, 0.224, 0.225]`, applied after conversion to `[0, 1]`. Record these constants, resize interpolation, antialias behavior and the resolved validation resize size in the resolved configuration.
 - Seed training transformations by seed, epoch and event index for reproducible resume behavior.
 
 These augmentation choices are project defaults, not a claim of exact JFAA reproduction.
+
+**Preprocessing decision, 17 November 2026:** Niels's implementation uses the upstream single-view validation resize convention (438 before a 384 crop), replacing the earlier shorter-side size of 384. The reason is alignment with the pretrained model's released evaluation preprocessing, not an observed validation gain. Keep training crop scale `[0.5, 1.0]` and flip probability `0.5` unchanged; do not import JFAA's temporal jitter or annotation filtering. Source: [official evaluation transforms](https://github.com/facebookresearch/vjepa2/blob/main/evals/video_classification_frozen/utils.py). Pin this source revision with the model dependencies.
 
 ### N4. Integrate and validate the backbone
 
