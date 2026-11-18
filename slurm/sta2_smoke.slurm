@@ -14,8 +14,8 @@
 
 set -euo pipefail
 
-# Match the requested A100 partition.
-module load cluster/wice/gpu_a100
+# The P100 wrapper overrides the module and precision explicitly.
+module load "${STA2_CLUSTER_MODULE:-cluster/wice/gpu_a100}"
 
 # Use the private Miniconda installation.
 # Do not load the Miniforge3 module.
@@ -30,6 +30,11 @@ STA2_METADATA_DIR="${STA2_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines}"
 STA2_CHECKPOINT="${STA2_CHECKPOINT:-$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt}"
 
 STA2_CONFIG="${STA2_CONFIG:-configs/sta2/data_backbone.yaml}"
+export STA2_PRECISION="${STA2_PRECISION:-bf16}"
+case "$STA2_PRECISION" in
+    bf16|fp32) ;;
+    *) printf 'STA2_PRECISION must be bf16 or fp32\n' >&2; exit 2 ;;
+esac
 
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=4
@@ -85,11 +90,13 @@ printf 'Video directory: %s\n' "$STA2_RAW_DIR"
 printf 'Metadata directory: %s\n' "$STA2_METADATA_DIR"
 printf 'Checkpoint: %s\n' "$STA2_CHECKPOINT"
 printf 'Configuration: %s\n' "$STA2_CONFIG"
+printf 'Precision: %s\n' "$STA2_PRECISION"
 
 nvidia-smi
 
 python - <<'PY'
 import sys
+import os
 
 import av
 import pandas
@@ -113,9 +120,10 @@ assert torch.cuda.is_available(), "CUDA is unavailable"
 assert torch.cuda.device_count() == 1, (
     "This smoke job expects exactly one visible GPU"
 )
-assert torch.cuda.is_bf16_supported(), (
-    "BF16 is not supported on the allocated GPU"
-)
+if os.environ["STA2_PRECISION"] == "bf16":
+    assert torch.cuda.is_bf16_supported(), (
+        "BF16 is not supported on the allocated GPU"
+    )
 
 properties = torch.cuda.get_device_properties(0)
 
@@ -143,6 +151,7 @@ python scripts/profile_sta2.py \
   --measured-steps 100 \
   --workers 2 \
   --seed 42 \
+  --precision "$STA2_PRECISION" \
   "${EXTRA[@]}"
 
 printf 'Elapsed seconds: %s\n' "$((SECONDS - started))"

@@ -269,6 +269,7 @@ Tasks:
 - Do not copy the reference loader’s behavior of silently retaining randomly initialized tensors when checkpoint shapes differ.
 - Keep all backbone parameters frozen and the backbone in evaluation mode.
 - Use BF16 autocast on supported GPUs.
+- P100 feasibility diagnostics may explicitly use FP32 because P100 does not support native BF16. Record the precision in the resolved configuration and profile; these runs do not replace the A100/H100 BF16 training pilot. Keep the same ViT-G checkpoint, resolution and sampling, and report an out-of-memory blocker rather than substituting a smaller model.
 - Run the frozen forward under `torch.no_grad()` so the head can subsequently train on its outputs.
 - Keep the backbone in evaluation mode even when the enclosing system enters training mode.
 
