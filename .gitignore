@@ -29,6 +29,8 @@ results/**
 !results/tables/.gitkeep
 runs/
 wandb/
+results_old_subset/
+*.log
 
 # Model checkpoints and competition submissions
 *.ckpt
