@@ -2,6 +2,7 @@
 
 import argparse
 from collections import Counter
+from contextlib import nullcontext
 import importlib
 import json
 from pathlib import Path
@@ -35,6 +36,14 @@ def git_output(*arguments):
         cwd=PROJECT_ROOT,
         text=True,
     ).strip()
+
+
+def precision_context(precision):
+    if precision == "fp32":
+        return nullcontext()
+    if precision == "bf16":
+        return torch.autocast("cuda", dtype=torch.bfloat16)
+    raise ValueError(f"Unsupported precision: {precision}")
 
 
 def choose_pilot(dataset, count, seed):
@@ -108,6 +117,10 @@ def main():
     parser.add_argument("--measured-steps", type=int, default=100)
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument(
+        "--precision", choices=("bf16", "fp32"), default="bf16",
+        help="BF16 for A100/H100; explicit FP32 diagnostic mode for P100.",
+    )
 
     parser.add_argument(
         "--observed-only",
@@ -135,14 +148,15 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is unavailable")
 
-    if not torch.cuda.is_bf16_supported():
-        raise RuntimeError("This pilot requires BF16 support")
+    if args.precision == "bf16" and not torch.cuda.is_bf16_supported():
+        raise RuntimeError("BF16 unsupported; P100 diagnostics require --precision fp32")
 
     config = yaml.safe_load(
         Path(args.config).read_text()
     )
     args.seed = config.get("seed", 42) if args.seed is None else args.seed
     config["seed"] = args.seed
+    config["precision"] = args.precision
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
@@ -232,7 +246,7 @@ def main():
             args.checkpoint,
             config,
             observed_only=args.observed_only,
-            bf16=True,
+            bf16=args.precision == "bf16",
         )
         .to(device)
     )
@@ -324,10 +338,7 @@ def main():
             torch.cuda.synchronize()
             started = time.perf_counter()
 
-            with torch.autocast(
-                "cuda",
-                dtype=torch.bfloat16,
-            ):
+            with precision_context(args.precision):
                 outputs = head(
                     tokens["observed_tokens"],
                     tokens["future_tokens"],
@@ -427,6 +438,7 @@ def main():
     properties = torch.cuda.get_device_properties(0)
 
     profile = {
+        "precision": args.precision,
         "mode": (
             "observed_only"
             if args.observed_only
