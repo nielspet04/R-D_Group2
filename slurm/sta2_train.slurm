@@ -16,8 +16,15 @@ set -euo pipefail
 
 # Override this too when selecting an H100 partition at submission.
 module load "${STA2_CLUSTER_MODULE:-cluster/wice/gpu_a100}"
-source /data/leuven/397/vsc39710/miniconda3/etc/profile.d/conda.sh
-conda activate /data/leuven/397/vsc39710/miniconda3/envs/rd_sta2
+STA2_CONDA_ROOT="${STA2_CONDA_ROOT:-$VSC_DATA/miniconda3}"
+source "$STA2_CONDA_ROOT/etc/profile.d/conda.sh"
+if [[ -n "${STA2_CONDA_ENV:-}" ]]; then
+    conda activate "$STA2_CONDA_ENV"
+elif [[ -d "$VSC_DATA/conda_envs/rd_sta2" ]]; then
+    conda activate "$VSC_DATA/conda_envs/rd_sta2"
+else
+    conda activate rd_sta2
+fi
 
 cd "$VSC_DATA/R-D_Group2"
 
@@ -66,7 +73,16 @@ PY
 
 printf 'Git commit: %s\n' "$(git rev-parse HEAD)"
 printf 'Python: %s\n' "$(command -v python)"
+printf 'Video directory: %s\n' "$STA2_RAW_DIR"
+printf 'Metadata directory: %s\n' "$STA2_METADATA_DIR"
+printf 'Training configuration: %s\n' "$STA2_TRAIN_CONFIG"
 nvidia-smi
+
+# --mem requests memory per node. Remove conflicting inherited alternatives.
+unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
+# Slurm may adjust CPUs per task for the allocation; retain that value rather
+# than the original cpu count encoded in SLURM_TRES_PER_TASK.
+unset SLURM_TRES_PER_TASK
 
 # One launcher, one process per GPU. The trainer owns DDP and accumulation.
 srun --ntasks=1 python -m torch.distributed.run \
