@@ -31,7 +31,7 @@ cd "$VSC_DATA/R-D_Group2"
 STA2_GPUS="${STA2_GPUS:-4}"
 STA2_TRAIN_CONFIG="${STA2_TRAIN_CONFIG:-configs/sta2/main.yaml}"
 export STA2_RAW_DIR="${STA2_RAW_DIR:-$VSC_SCRATCH/epic_sta/raw_fixed}"
-export STA2_METADATA_DIR="${STA2_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines}"
+export STA2_METADATA_DIR="${STA2_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines_local}"
 export STA2_CHECKPOINT="${STA2_CHECKPOINT:-$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt}"
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=4

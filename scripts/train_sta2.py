@@ -44,9 +44,11 @@ from src.sta2.training import (  # noqa: E402
     build_scheduler,
     close_distributed,
     fit,
+    get_git_provenance,
     initialize_distributed,
     seed_everything,
     wrap_head_for_distributed,
+    write_json_atomic,
 )
 
 
@@ -105,6 +107,7 @@ def parse_args(
         default=DEFAULT_SOURCE_PROVENANCE,
     )
     parser.add_argument("--resume", type=Path)
+    parser.add_argument("--require-complete-metadata", action="store_true")
     parser.add_argument(
         "--observed-only",
         action=argparse.BooleanOptionalAction,
@@ -193,7 +196,8 @@ def _loader(
         "sampler": sampler,
         "num_workers": workers,
         "pin_memory": bool(data_config["pin_memory"]),
-        "persistent_workers": workers > 0,
+        # Dataset.set_epoch must reach worker copies on every new iterator.
+        "persistent_workers": False,
         "collate_fn": collate_sta_clips,
         "drop_last": False,
     }
@@ -218,6 +222,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         config = STA2TrainingConfig.from_mapping(
             resolved["training"]
         )
+        backbone_config = _read_yaml(args.backbone_config)
         seed_everything(config.seed, context.rank)
 
         observed_only = resolved["experiment"][
@@ -245,6 +250,8 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                 ),
             },
             "world_size": context.world_size,
+            "backbone_config": backbone_config,
+            "metadata_sha256": sha256_file(args.metadata),
         }
 
         train_events = load_events(
@@ -275,6 +282,15 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             training=False,
             seed=config.seed,
         )
+        if args.require_complete_metadata:
+            required_videos = set(train_events["video_id"]) | set(validation_events["video_id"])
+            invalid = sorted(
+                video_id for video_id in required_videos
+                if train_dataset.metadata.get(video_id, {}).get("status") != "ok"
+                or video_id not in train_dataset.videos
+            )
+            if invalid:
+                raise ValueError(f"Full run requires audited, present videos: {invalid}")
         train_sampler = DistributedSampler(
             train_dataset,
             num_replicas=context.world_size,
@@ -320,6 +336,35 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             complete_annotations["verb_class"].to_numpy(),
             complete_annotations["noun_class"].to_numpy(),
         )
+        backbone_provenance, split_hashes = _rank_zero_metadata(context, args)
+        if context.is_main:
+            known_pairs = set(action_vocabulary)
+            validation_pairs = list(zip(
+                validation_events["verb_class"],
+                validation_events["noun_class"],
+            ))
+            run_manifest = {
+                "configuration": resolved,
+                "split_hashes": split_hashes,
+                "backbone_provenance": backbone_provenance,
+                **get_git_provenance(PROJECT_ROOT),
+                "train_events": len(train_events),
+                "validation_events": len(validation_events),
+                "train_participants": sorted(train_events["participant_id"].unique().tolist()),
+                "validation_participants": sorted(validation_events["participant_id"].unique().tolist()),
+                "training_action_classes": len(action_vocabulary),
+                "evaluation_action_classes": len(evaluation_action_pairs),
+                "validation_events_in_training_action_vocabulary": sum(
+                    pair in known_pairs for pair in validation_pairs
+                ),
+                "validation_events_outside_training_action_vocabulary": sum(
+                    pair not in known_pairs for pair in validation_pairs
+                ),
+                "accumulation_steps": accumulation_steps(config, context.world_size),
+                "resume": str(args.resume) if args.resume else None,
+            }
+            write_json_atomic(args.output_dir / f"run-manifest-{os.environ.get('SLURM_JOB_ID', 'local')}.json", run_manifest)
+            print(json.dumps({"event": "training_setup", **run_manifest}), flush=True)
         head_config = resolved["head"]
         verb_prior = _class_prior(
             train_verbs.numpy(),
@@ -333,7 +378,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         )
         backbone = FrozenAnticipationBackbone.from_checkpoint(
             args.backbone_checkpoint,
-            _read_yaml(args.backbone_config),
+            backbone_config,
             observed_only=observed_only,
             bf16=config.bf16,
         ).to(context.device)
@@ -359,10 +404,6 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             windows_per_epoch=windows_per_epoch,
             config=config,
         )
-        backbone_provenance, split_hashes = (
-            _rank_zero_metadata(context, args)
-        )
-
         return fit(
             model=model,
             train_loader=train_loader,
