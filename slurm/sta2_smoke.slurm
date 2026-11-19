@@ -19,14 +19,14 @@ module load "${STA2_CLUSTER_MODULE:-cluster/wice/gpu_a100}"
 
 # Use the private Miniconda installation.
 # Do not load the Miniforge3 module.
-source /data/leuven/397/vsc39710/miniconda3/etc/profile.d/conda.sh
-conda activate /data/leuven/397/vsc39710/miniconda3/envs/rd_sta2
+source /data/leuven/397/vsc39706/miniconda3/etc/profile.d/conda.sh
+conda activate /data/leuven/397/vsc39706/conda_envs/rd_sta2
 
 cd "$VSC_DATA/R-D_Group2"
 
 # Allow explicit overrides while providing the verified defaults.
 STA2_RAW_DIR="${STA2_RAW_DIR:-$VSC_SCRATCH/epic_sta/raw_fixed}"
-STA2_METADATA_DIR="${STA2_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines}"
+STA2_METADATA_DIR="$VSC_SCRATCH/epic_sta/sta2_timelines_local"
 STA2_CHECKPOINT="${STA2_CHECKPOINT:-$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt}"
 
 STA2_CONFIG="${STA2_CONFIG:-configs/sta2/data_backbone.yaml}"
@@ -103,7 +103,7 @@ import pandas
 import torch
 
 expected_prefix = (
-    "/data/leuven/397/vsc39710/miniconda3/envs/rd_sta2"
+    "/data/leuven/397/vsc39706/conda_envs/rd_sta2"
 )
 
 print("Python executable:", sys.executable)
