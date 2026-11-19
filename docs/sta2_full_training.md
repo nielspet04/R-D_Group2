@@ -179,3 +179,22 @@ Local verification uses the installed `rd_sta2` environment (PyTorch 2.5.1+cu118
 the full STA2 suite and targeted training/CUDA RNG regression tests pass.
 The installed Windows Bash parser timed out, including outside the sandbox;
 shell syntax has been reviewed manually, with `bash -n` included above for VSC.
+
+## BF16 integration failure in job 62770181
+
+The first H100 submission failed because the adapter returned observed and
+future tokens with different dtypes. The original synthetic tests exercised
+FP32 outputs for both branches and missed this AMP integration case. A new
+local CUDA test with small instances of the actual vendored encoder/predictor
+reproduces FP32 encoder output and BF16 predictor output. The adapter now
+promotes both to their common dtype before returning them to the model. This
+preserves the FP32 values rather than downcasting them, while retaining BF16
+autocast for the backbone and head operations. No model, sampling, batch or
+training schedule settings change.
+
+The regression tests exercise head forward/backward and an optimizer update,
+including activation checkpointing; the CUDA integration test also verifies
+the frozen backbone state hash is unchanged. These are small local modules,
+not a full ViT-G checkpoint or two-H100 validation. Pull the fix and submit a
+fresh job using the commands above (`STA2_RESUME_RUN` unset); retain the failed
+job's output for diagnosis.
