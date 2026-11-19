@@ -3,13 +3,13 @@
 #SBATCH --job-name=sta2-train-smoke
 #SBATCH --account=lp_edu_rdlab
 #SBATCH --clusters=wice
-#SBATCH --partition=gpu_a100
+#SBATCH --partition=gpu_p100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=96000M
-#SBATCH --time=01:00:00
+#SBATCH --mem=40000M
+#SBATCH --time=02:00:00
 #SBATCH --output=logs/sta2-train-smoke-%j.out
 
 set -euo pipefail
@@ -21,6 +21,10 @@ cd "$VSC_DATA/R-D_Group2"
 STA2_SMOKE_INPUTS="${STA2_SMOKE_INPUTS:-results/sta2/training-smoke-inputs}"
 export STA2_GPUS=1
 export STA2_TRAIN_CONFIG="$STA2_SMOKE_INPUTS/config.yaml"
+# P100 requires FP32. The common launcher writes a job-specific configuration
+# rather than changing the prepared fixture or the full-training defaults.
+export STA2_CLUSTER_MODULE=cluster/wice/gpu_p100
+export STA2_TRAIN_PRECISION=fp32
 export STA2_RAW_DIR="${STA2_RAW_DIR:-$VSC_SCRATCH/epic_sta/raw_fixed}"
 # This completed audit is separate from the older sta2_timelines directory.
 export STA2_METADATA_DIR="$VSC_SCRATCH/epic_sta/sta2_timelines_local"
