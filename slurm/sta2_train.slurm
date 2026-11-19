@@ -100,7 +100,8 @@ print("Required accumulation for global batch 16, microbatch 1:", 16 // expected
 PY
 
 printf 'Git commit: %s\n' "$(git rev-parse HEAD)"
-printf 'Python: %s\n' "$(command -v python)"
+STA2_PYTHON="$(command -v python)"
+printf 'Python: %s\n' "$STA2_PYTHON"
 printf 'Video directory: %s\n' "$STA2_RAW_DIR"
 printf 'Metadata directory: %s\n' "$STA2_METADATA_DIR"
 printf 'Training configuration: %s\n' "$STA2_TRAIN_CONFIG"
@@ -113,6 +114,7 @@ unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 unset SLURM_TRES_PER_TASK
 
 # One launcher, one process per GPU. The trainer owns DDP and accumulation.
-srun --ntasks=1 python -m torch.distributed.run \
+# Resolve Python before srun: the step's PATH may differ from the batch shell.
+srun --ntasks=1 --export=ALL "$STA2_PYTHON" -m torch.distributed.run \
     --standalone --nnodes=1 --nproc_per_node="$STA2_GPUS" \
     scripts/train_sta2.py --config "$STA2_TRAIN_CONFIG" "$@"
