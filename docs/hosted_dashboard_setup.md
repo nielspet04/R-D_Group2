@@ -133,6 +133,39 @@ Job-reported progress and actual scheduler state are separate. A missing final h
 
 ## 8. Existing histories, retries and scheduler snapshots
 
+### Automatically follow a job that started without upload settings
+
+An already-running Python process cannot acquire newly exported settings. For
+such a job, `slurm/monitor_follow.slurm` runs a separate finite CPU batch helper,
+with no GPU request and no interactive session. It imports saved completed epochs
+every five minutes using the same stable import identity. It does not publish
+within-epoch progress, heartbeats or scheduler state, and never reports job success
+from a missing queue entry. Native history/checkpoint files are unchanged.
+
+From VSC Bash after pulling this branch and configuring the endpoint/key path:
+
+```bash
+mkdir -p logs
+sbatch --export=ALL slurm/monitor_follow.slurm \
+  --job-id 62771307 --run-dir results/sta2/full-h100-62771307
+```
+
+This submits one CPU job (one core, 1 GB, up to 12 hours) using the existing
+project account/batch partition. It may queue. It first probes the API from its
+compute host; check `logs/dashboard-upload-HELPER_JOB_ID.out` for
+`Compute-node API probe succeeded`. Compute-host outbound connectivity is not
+verified by the login-host probe. If the site's network/policy does not permit
+this upload, do not bypass it. The helper fails visibly on initial probe failure.
+
+The helper stops after two successful history uploads with the target absent
+from a successful queue query, or after 11.9 hours. Scheduler errors and transient
+history/upload errors are retried within that limit. Local outboxes survive
+failures. A longer training run needs another helper after that limit (or an
+explicitly chosen longer batch wall time and matching `--max-hours`, within site
+limits). Closing the PC does not stop a submitted helper. Future training jobs
+should inherit the two upload environment variables and use the integrated
+uploader instead; no helper is needed once that path is verified.
+
 Historical import default is dry run:
 
 ```bash
