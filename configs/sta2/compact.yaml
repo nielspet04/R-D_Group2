@@ -1,0 +1,33 @@
+# Independent development experiment: reduce only prediction-head depth.
+schema_version: 1
+
+training:
+  seed: 42
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  beta1: 0.9
+  beta2: 0.999
+  max_epochs: 20
+  warmup_epochs: 1
+  early_stopping_patience: 5
+  gradient_clip_norm: 1.0
+  microbatch_size: 1
+  effective_global_batch_size: 16
+  bf16: true
+
+head:
+  num_verbs: 97
+  num_nouns: 300
+  num_heads: 16
+  mlp_ratio: 4.0
+  depth: 2
+  use_activation_checkpointing: true
+
+data:
+  workers_per_rank: 2
+  pin_memory: true
+  prefetch_factor: 1
+
+experiment:
+  observed_only: false
+  selection_metric: action_mt5r
