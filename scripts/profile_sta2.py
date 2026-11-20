@@ -250,6 +250,11 @@ def main():
         )
         .to(device)
     )
+    print(
+        f"Backbone loaded on {device}; precision={args.precision}; "
+        f"embed_dim={backbone.embed_dim}",
+        flush=True,
+    )
 
     head = optimizer = loss_function = None
 
@@ -374,12 +379,18 @@ def main():
         return shapes, backbone_seconds, head_seconds
 
     warmup_completed = 0
+    print(f"Warm-up: 0/{args.warmup_steps} usable steps", flush=True)
 
     while warmup_completed < args.warmup_steps:
-        result, _, _ = perform_step(next(batches))
+        result, backbone_seconds, _ = perform_step(next(batches))
 
         if result is not None:
             warmup_completed += 1
+            print(
+                f"Warm-up: {warmup_completed}/{args.warmup_steps}; "
+                f"backbone={backbone_seconds:.3f}s",
+                flush=True,
+            )
 
     torch.cuda.synchronize()
 
@@ -395,6 +406,7 @@ def main():
     shapes = None
 
     started = time.perf_counter()
+    print(f"Measuring {args.measured_steps} usable steps...", flush=True)
 
     # Count usable forward/training steps, not invalid-only iterations.
     while usable_steps < args.measured_steps:
@@ -414,6 +426,13 @@ def main():
 
             if head is not None:
                 head_times.append(head_seconds)
+            if usable_steps % 10 == 0 or usable_steps == args.measured_steps:
+                print(
+                    f"Measured: {usable_steps}/{args.measured_steps}; "
+                    f"mean backbone={np.mean(backbone_times):.3f}s; "
+                    f"elapsed={time.perf_counter() - started:.1f}s",
+                    flush=True,
+                )
 
     torch.cuda.synchronize()
     elapsed = time.perf_counter() - started
