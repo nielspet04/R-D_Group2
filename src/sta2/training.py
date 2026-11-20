@@ -862,7 +862,7 @@ def save_checkpoint(
     backbone_provenance: Mapping[str, Any],
     split_hashes: Mapping[str, str],
     action_vocabulary: ActionVocabulary,
-    best_metric: float,
+    best_metric: float | None,
     epochs_without_improvement: int,
     rng_states: Sequence[Mapping[str, Any]],
     repository_root: Path,
@@ -1002,6 +1002,7 @@ def fit(
     split_hashes: Mapping[str, str],
     repository_root: Path,
     resume: Path | None = None,
+    final_epochs: int | None = None,
 ) -> dict[str, Any]:
     """Train, validate, early-stop, checkpoint, and resume at epochs."""
 
@@ -1010,7 +1011,12 @@ def fit(
     history_path = output_dir / "history.json"
     start_epoch = 1
     optimizer_step = 0
-    best_metric = float("-inf")
+    final_training = final_epochs is not None
+    if final_training and not 1 <= final_epochs <= config.max_epochs:
+        raise ValueError("final epochs must be between 1 and max_epochs")
+    if final_training and len(validation_loader.dataset):
+        raise ValueError("final retraining must not evaluate training data as validation")
+    best_metric = None if final_training else float("-inf")
     epochs_without_improvement = 0
     history: list[dict[str, Any]] = []
 
@@ -1053,7 +1059,7 @@ def fit(
 
         start_epoch = int(checkpoint["epoch"]) + 1
         optimizer_step = int(checkpoint["optimizer_step"])
-        best_metric = float(checkpoint["best_metric"])
+        best_metric = None if final_training else float(checkpoint["best_metric"])
         epochs_without_improvement = int(
             checkpoint["epochs_without_improvement"]
         )
@@ -1073,9 +1079,9 @@ def fit(
     if resume is not None and context.is_main:
         monitor.confirm_resume(start_epoch-1, resolved_config)
     completed_epoch = start_epoch - 1
-    completion_reason = "max_epochs"
-    for epoch in range(start_epoch, config.max_epochs + 1):
-        if epochs_without_improvement >= config.early_stopping_patience:
+    completion_reason = "final_epochs" if final_training else "max_epochs"
+    for epoch in range(start_epoch, (final_epochs or config.max_epochs) + 1):
+        if not final_training and epochs_without_improvement >= config.early_stopping_patience:
             break
         if context.is_main:
             monitor.update(phase="training", epoch=epoch, max_epochs=config.max_epochs)
@@ -1101,10 +1107,10 @@ def fit(
             train_metrics["train_optimizer_steps"]
         )
         train_seconds = time.monotonic() - epoch_started
-        if context.is_main:
+        if context.is_main and not final_training:
             monitor.update(phase="validation")
         validation_started = time.monotonic()
-        validation_metrics = validate_one_epoch(
+        validation_metrics = {} if final_training else validate_one_epoch(
             model,
             validation_loader,
             action_vocabulary,
@@ -1116,13 +1122,13 @@ def fit(
             context,
         )
         validation_seconds = time.monotonic() - validation_started
-        score = float(validation_metrics["action_mt5r"])
-        improved = score > best_metric
+        score = None if final_training else float(validation_metrics["action_mt5r"])
+        improved = not final_training and score > best_metric
 
         if improved:
             best_metric = score
             epochs_without_improvement = 0
-        else:
+        elif not final_training:
             epochs_without_improvement += 1
 
         epoch_record = {
@@ -1130,16 +1136,17 @@ def fit(
             **train_metrics,
             **validation_metrics,
             "learning_rate": optimizer.param_groups[0]["lr"],
-            "best_action_mt5r": best_metric,
             "train_seconds": train_seconds,
             "validation_seconds": validation_seconds,
             "train_events_per_second": train_metrics["train_events"] / train_seconds,
-            "validation_events_per_second": validation_metrics["validation_events"] / validation_seconds,
             "rank_peak_reserved_gpu_bytes": (
                 torch.cuda.max_memory_reserved(context.device)
                 if context.device.type == "cuda" else 0
             ),
         }
+        if not final_training:
+            epoch_record["best_action_mt5r"] = best_metric
+            epoch_record["validation_events_per_second"] = validation_metrics["validation_events"] / validation_seconds
         history.append(epoch_record)
         completed_epoch = epoch
         rng_states = gather_rng_states(context)
@@ -1199,7 +1206,7 @@ def fit(
             break
 
         if (
-            epochs_without_improvement
+            not final_training and epochs_without_improvement
             >= config.early_stopping_patience
         ):
             completion_reason = "early_stopping"
@@ -1212,6 +1219,6 @@ def fit(
         "completed_epoch": completed_epoch,
         "optimizer_step": optimizer_step,
         "history": history,
-        "best_checkpoint": checkpoint_dir / "best.pt",
+        "best_checkpoint": None if final_training else checkpoint_dir / "best.pt",
         "last_checkpoint": checkpoint_dir / "last.pt",
     }

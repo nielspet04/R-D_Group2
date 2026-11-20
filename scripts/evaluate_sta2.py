@@ -245,6 +245,8 @@ def evaluate_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
         )
         checkpoint = load_evaluation_checkpoint(args.checkpoint)
         configuration = checkpoint["configuration"]
+        if configuration.get("final_training") and args.split != "test":
+            raise ValueError("final retraining has no held-out validation; use --split test")
         checkpoint_epoch = int(checkpoint["epoch"])
         checkpoint_git_commit = checkpoint["git_commit"]
         checkpoint_git_dirty = bool(checkpoint["git_dirty"])
