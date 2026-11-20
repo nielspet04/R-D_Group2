@@ -107,6 +107,10 @@ def parse_args(
         default=DEFAULT_SOURCE_PROVENANCE,
     )
     parser.add_argument("--resume", type=Path)
+    parser.add_argument(
+        "--final-epochs", type=int,
+        help="Final retraining duration selected on held-out validation. Requires all labelled events in train and an empty validation CSV.",
+    )
     parser.add_argument("--require-complete-metadata", action="store_true")
     parser.add_argument(
         "--observed-only",
@@ -222,6 +226,10 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         config = STA2TrainingConfig.from_mapping(
             resolved["training"]
         )
+        if args.final_epochs is not None:
+            if not 1 <= args.final_epochs <= config.max_epochs:
+                raise ValueError("final epochs must be between 1 and the configured max_epochs")
+            resolved["final_training"] = {"epochs": args.final_epochs}
         backbone_config = _read_yaml(args.backbone_config)
         seed_everything(config.seed, context.rank)
 
@@ -266,6 +274,11 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             train_split=args.train_split,
             validation_split=args.validation_split,
         )
+        if args.final_epochs is not None:
+            if len(validation_events) or len(train_events) != len(pd.read_csv(args.annotations)):
+                raise ValueError("final retraining requires all labelled events in train and empty validation")
+        elif not len(train_events) or not len(validation_events):
+            raise ValueError("development training requires nonempty train and validation splits")
         train_dataset = STAClipDataset(
             train_events,
             args.raw_dir,
@@ -425,6 +438,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             split_hashes=split_hashes,
             repository_root=PROJECT_ROOT,
             resume=args.resume,
+            final_epochs=args.final_epochs,
         )
     finally:
         close_distributed()
@@ -435,7 +449,10 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     result = run_training(args)
 
     if int(os.environ.get("RANK", "0")) == 0:
-        print(f"Best Action MT5R: {result['best_action_mt5r']:.4f}")
+        if args.final_epochs is None:
+            print(f"Best Action MT5R: {result['best_action_mt5r']:.4f}")
+        else:
+            print("Final retraining: no validation metric; export last.pt after the requested epochs finish.")
         print(f"Completed epoch:  {result['completed_epoch']}")
         print(f"Best checkpoint: {result['best_checkpoint']}")
         print(f"Last checkpoint: {result['last_checkpoint']}")
