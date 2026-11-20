@@ -1,0 +1,94 @@
+{
+  "fields": {
+    "experiment_registered": [
+      "comparison_identity",
+      "configuration",
+      "model"
+    ],
+    "attempt_submitted": [
+      "cluster",
+      "job_id"
+    ],
+    "submission_unknown": [
+      "reason"
+    ],
+    "attempt_started": [
+      "cluster",
+      "job_id"
+    ],
+    "resume_confirmed": [
+      "cutoff",
+      "parent_attempt_id"
+    ],
+    "heartbeat": [
+      "completed_epoch",
+      "epoch",
+      "gpus",
+      "phase",
+      "progress_at"
+    ],
+    "progress": [
+      "completed_epoch",
+      "epoch",
+      "phase",
+      "progress_at"
+    ],
+    "epoch_committed": [
+      "action_mt5r",
+      "best_action_mt5r",
+      "best_epoch",
+      "epoch",
+      "history_revision",
+      "learning_rate",
+      "noun_mt5r",
+      "rank_peak_reserved_gpu_bytes",
+      "train_events",
+      "train_events_per_second",
+      "train_excluded_events",
+      "train_loss",
+      "train_seconds",
+      "train_usable_events",
+      "validation_events",
+      "validation_events_per_second",
+      "validation_fallback_events",
+      "validation_loss",
+      "validation_seconds",
+      "validation_usable_events",
+      "verb_mt5r"
+    ],
+    "training_finished": [
+      "completion_reason"
+    ],
+    "training_failed": [
+      "error_code"
+    ],
+    "batch_exit_reported": [
+      "exit_code"
+    ],
+    "scheduler_snapshot": [
+      "cluster",
+      "jobs"
+    ]
+  },
+  "metrics": [
+    "action_mt5r",
+    "best_action_mt5r",
+    "best_epoch",
+    "learning_rate",
+    "noun_mt5r",
+    "rank_peak_reserved_gpu_bytes",
+    "train_events",
+    "train_events_per_second",
+    "train_excluded_events",
+    "train_loss",
+    "train_seconds",
+    "train_usable_events",
+    "validation_events",
+    "validation_events_per_second",
+    "validation_fallback_events",
+    "validation_loss",
+    "validation_seconds",
+    "validation_usable_events",
+    "verb_mt5r"
+  ]
+}

@@ -1,0 +1,2 @@
+# Optional: install in the dashboard environment and/or the training publisher environment.
+wandb==0.31.0

@@ -432,7 +432,10 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     args = parse_args(argv)
-    result = run_training(args)
+    from src.run_monitor import monitor
+    monitor.configure(args.output_dir, "sta2", resume=args.resume)
+    with monitor:
+        result = run_training(args)
 
     if int(os.environ.get("RANK", "0")) == 0:
         print(f"Best Action MT5R: {result['best_action_mt5r']:.4f}")

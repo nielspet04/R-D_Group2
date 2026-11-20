@@ -88,6 +88,20 @@ python scripts/dashboard.py --snapshot results/monitoring/demo.json --db results
 
 Open `http://127.0.0.1:8790`. This example uses synthetic data only.
 
+The dashboard also discovers STA2 JSON histories, shows execution attempts, and
+compares up to six experiments. W&B is optional: append
+`--wandb-project YOUR_TEAM/YOUR_PROJECT` to a live command, or use
+`--wandb-only --wandb-project YOUR_TEAM/YOUR_PROJECT` without SSH. Install
+`requirements-monitoring.txt` and configure `WANDB_API_KEY` privately first.
+See the [combined dashboard setup](docs/vsc_dashboard_stappenplan.md#11-combined-dashboard-and-optional-wb)
+for publication, replay, database migration and current validation limits.
+
+For the phone-accessible version that works with the PC off and without an
+interactive VSC session, follow the [hosted dashboard setup](docs/hosted_dashboard_setup.md).
+The website and Supabase API are deployed; six historical runs have been imported.
+Update the VSC checkout using Git, then configure the private upload-key file
+for automatic uploads from future training starts or resumes. W&B is optional.
+
 When the repository is open through VS Code Remote SSH, run the dashboard in
 the remote VSC terminal and forward port `8790` in VS Code:
 

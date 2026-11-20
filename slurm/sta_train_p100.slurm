@@ -44,6 +44,9 @@ cd "$VSC_DATA/R-D_Group2"
 FEATURE_ROOT=data/processed/sta_features
 ANNOTATIONS=data/raw/EPIC_100_train.csv
 OUTPUT_ROOT=${RND_OUTPUT_ROOT:-results}
+if [[ -n "${RND_MONITOR_API_URL:-}" ]]; then
+    trap 'rnd_exit=$?; "$PYTHON" scripts/monitor_lifecycle.py --output-root "$OUTPUT_ROOT" --exit-code "$rnd_exit" || true' EXIT
+fi
 CHECKPOINT="$OUTPUT_ROOT/checkpoints/$MODEL/best.pt"
 EVALUATION="$OUTPUT_ROOT/tables/${MODEL}_evaluation.json"
 

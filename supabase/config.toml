@@ -1,0 +1,10 @@
+project_id = "training-observatory"
+
+[functions.monitor-ingest]
+verify_jwt = false
+
+[functions.monitor-read]
+verify_jwt = true
+
+[functions.monitor-admin]
+verify_jwt = true

@@ -232,6 +232,7 @@ def run_training(args: argparse.Namespace) -> dict:
 
 def main(argv: Sequence[str] | None = None) -> dict:
     args = parse_args(argv)
+    monitor.configure(args.output_root, args.model)
     with monitor:
         result = run_training(args)
     fallback_events = result["best_validation_metrics"][

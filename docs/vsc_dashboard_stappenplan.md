@@ -329,3 +329,137 @@ Lokaal verifiëren zonder VSC of GPU:
 ```powershell
 python -m unittest discover -s tests -p test_monitoring.py -v
 ```
+
+## 11. Combined dashboard and optional W&B
+
+The same dashboard now reads native STA2 `history.json`/run manifests as well as
+baseline CSV histories. Select two to six experiment checkboxes to compare curves
+and export CSV. Recall is displayed as a percentage; stored values remain fractions.
+The summary's verb/noun results come from the epoch selected by best Action MT5R.
+Unknown or different split identities produce a comparison warning.
+
+Existing `--snapshot`, `--host`, and `--local-root` commands continue working.
+The optional cloud reader has its own background refresh/error state. Browser
+polling reads cached data and does not query Slurm or W&B directly. Manual source
+refresh has a minimum one-minute cooldown. Existing databases are upgraded in place;
+the first upgrade saves a consistent `<database>.before-v2.sqlite3` backup.
+Do not run old and new dashboard servers against the same database concurrently.
+
+### Enable cloud reading on the laptop
+
+In PowerShell, from the project root:
+
+```powershell
+python -m pip install -r requirements-monitoring.txt
+$env:WANDB_API_KEY = [System.Net.NetworkCredential]::new('', (Read-Host 'W&B API key' -AsSecureString)).Password
+python scripts/dashboard.py --wandb-only --wandb-project YOUR_TEAM/YOUR_PROJECT
+```
+
+Replace the project placeholder. The key is read privately, not put in source code
+or browser storage. Close the terminal or remove the environment value afterwards:
+`Remove-Item Env:WANDB_API_KEY`. Use a separate database for another cluster/account
+or W&B project. W&B-only mode supplies cloud metrics; it cannot supply fresh Slurm
+queue state or read VSC log files.
+
+To combine cloud data with VS Code Remote SSH, run in the **remote terminal** with
+the key available in that environment, then forward port 8790 as before:
+
+```bash
+python scripts/dashboard.py --local-root "$PWD" --interval 120 \
+  --wandb-project YOUR_TEAM/YOUR_PROJECT --db results/monitoring/combined.sqlite3
+```
+
+Alternatively append `--wandb-project` to the existing laptop `--host` command.
+Non-secret defaults can be copied from `configs/monitoring.example.json` to
+`configs/monitoring.local.json` and loaded using `--config`; source selection stays
+explicit on the command line. The config accepts `wandb_project`, `cluster`,
+`interval`, `db` and `port`; credentials are environment-only. `.env` files are not
+automatically loaded. With no key or SDK, cloud reads report an error and local
+monitoring remains available.
+
+### Enable publication for future training attempts
+
+In your normal VSC shell, install the optional requirements into the training
+environment, then set the following before submitting a job:
+
+```bash
+read -rsp 'W&B API key: ' WANDB_API_KEY; printf '\n'
+export WANDB_API_KEY
+export RND_WANDB_PROJECT=YOUR_TEAM/YOUR_PROJECT
+export RND_WANDB_MODE=online
+```
+
+Use `offline` instead of `online` where outbound HTTPS is unavailable. Leave the
+mode unset (or set `disabled`) to keep cloud publication disabled. The trainer
+writes normal history/checkpoints first. A rank-zero-owned separate publisher
+process starts after the first committed epoch; network failures do not change
+training/checkpoint selection. Every execution has its own W&B run, grouped by
+experiment ID. Local history remains authoritative after a checkpoint resume.
+The publisher uploads selected epoch metrics and configuration, not checkpoints,
+videos, feature arrays or captured console logs.
+
+The existing baseline submit command is unchanged. STA2 also supports the wrapper:
+
+```bash
+# Inspect only: no job is submitted, no output directory is created.
+python scripts/submit_monitored.py --job-type sta2-full-h100 --dry-run
+
+# This submits a real job with the existing two-H100 / 72-hour resource request.
+python scripts/submit_monitored.py --job-type sta2-full-h100
+
+# Real continuation into an existing output directory and last.pt checkpoint.
+python scripts/submit_monitored.py --job-type sta2-full-h100 \
+  --resume-run results/sta2/YOUR_EXISTING_RUN
+```
+
+Direct `sbatch slurm/sta2_full_h100.slurm` still works. It becomes an instrumented
+experiment at Python startup. The monitored wrapper records pending metadata before
+submission. If submission is reported as `SUBMISSION_UNKNOWN`, inspect `squeue`
+before retrying: a job may already have been created.
+
+Already running Python processes do not acquire new hooks. Their existing native
+histories can still appear through the legacy reader. Upload requires the cloud
+project to permit your account and the publisher host to have supported outbound
+access. Never print the key or add it to a Slurm script or Git.
+
+### Replay and recovery
+
+Attempt data is stored at `<output>/monitoring/attempts/<attempt-id>/`. It includes
+`attempt.json`, committed `epochs.json`, publisher status and SDK spool files.
+After an interrupted publisher, use the same project/key and online mode to replay:
+
+```bash
+python scripts/wandb_publish.py --attempt-dir PATH_TO_ATTEMPT_DIRECTORY --once
+```
+
+Online replay checks existing cloud epochs first; the dashboard also deduplicates
+epochs. Preserve offline SDK spool data. Use the installed SDK's `wandb sync --help`
+for its supported upload command; do not mix obsolete flags from older tutorials.
+Offline sync/resume must be validated with your account/SDK before relying on it
+for unattended recovery. The canonical local history is available independently.
+
+Sample history is bounded to the latest 300 displayed points and 14 days stored
+at full resolution. Scientific epoch history is retained. Collector file reads and
+cloud run/history scans have size/count limits; oversized native reads retain
+the previous good cache. Discovery currently covers 200 recent native experiments
+and 200 cloud attempts per refresh. Import older experiments via separate snapshots
+or databases rather than assuming they were all enumerated.
+
+For rollback, stop the new server and point the earlier version at the pre-upgrade
+backup. Keep original history/checkpoint files; never delete training output as a
+dashboard repair. Remote SQLite uses the default rollback journal; choose a storage
+location whose locking is supported by VSC, and keep durable backups if using
+node-local temporary storage.
+
+### Validation
+
+```powershell
+python -m unittest discover -s tests -p 'test_monitoring*.py' -v
+```
+
+Local verification includes mocked VSC/cloud behavior, database migration,
+failure isolation, source precedence and resume projection, HTTP checks and a
+Chrome demo comparison. Real cloud upload/replay, VSC network access and distributed
+GPU training still require the intended account/environment. PyTorch is absent in
+the development shell used for these changes; its training suites are not reported
+as passing. No real jobs were submitted during implementation.

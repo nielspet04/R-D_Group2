@@ -1,0 +1,18 @@
+{
+  "name": "training-observatory",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build_hosted.mjs",
+    "test:db": "node tests/hosted/database.test.mjs",
+    "test:contracts": "deno test supabase/functions/_shared/contracts_test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.17",
+    "esbuild": "0.25.12",
+    "supabase": "3.2.0"
+  }
+}

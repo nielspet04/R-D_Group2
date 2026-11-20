@@ -1,0 +1,204 @@
+{
+  "valid": [
+    {
+      "event_id": "5b4a9d8b-da7e-4890-bf4c-0ee4dc24d625",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 1,
+      "kind": "experiment_registered",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "model": "sta2",
+        "configuration": {
+          "seed": 42
+        }
+      }
+    },
+    {
+      "event_id": "2cbdf890-d667-4c7e-88ee-8c6c97fdcf37",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 2,
+      "kind": "attempt_started",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "job_id": "123",
+        "cluster": "wice"
+      }
+    },
+    {
+      "event_id": "5bff8186-1cf7-46d0-8f0a-64f29f41666c",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 3,
+      "kind": "heartbeat",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "phase": "training",
+        "gpus": []
+      }
+    },
+    {
+      "event_id": "da2328ee-5ecd-479b-abf9-ced837701ceb",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 4,
+      "kind": "epoch_committed",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "epoch": 1,
+        "history_revision": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+        "action_mt5r": 0
+      }
+    },
+    {
+      "event_id": "5caddf10-5f07-430c-a2ac-f3fc837c81f9",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 5,
+      "kind": "resume_confirmed",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "parent_attempt_id": "0d04ee01-a54d-551d-ab4a-b457563cb925",
+        "cutoff": 1
+      }
+    },
+    {
+      "event_id": "93e094dd-e937-4cc5-aa39-1ceb1bfe7aaa",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 6,
+      "kind": "batch_exit_reported",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "exit_code": 0
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "event_id": "5b4a9d8b-da7e-4890-bf4c-0ee4dc24d625",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": true,
+      "kind": "experiment_registered",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "model": "sta2",
+        "configuration": {
+          "seed": 42
+        }
+      }
+    },
+    {
+      "event_id": "bad",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 1,
+      "kind": "experiment_registered",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "model": "sta2",
+        "configuration": {
+          "seed": 42
+        }
+      }
+    },
+    {
+      "event_id": "5b4a9d8b-da7e-4890-bf4c-0ee4dc24d625",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 1,
+      "kind": "execute_shell",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "model": "sta2",
+        "configuration": {
+          "seed": 42
+        }
+      }
+    },
+    {
+      "event_id": "5b4a9d8b-da7e-4890-bf4c-0ee4dc24d625",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 1,
+      "kind": "experiment_registered",
+      "observed_at": "yesterday",
+      "payload": {
+        "model": "sta2",
+        "configuration": {
+          "seed": 42
+        }
+      }
+    },
+    {
+      "event_id": "da2328ee-5ecd-479b-abf9-ced837701ceb",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 4,
+      "kind": "epoch_committed",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "epoch": true,
+        "history_revision": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+        "action_mt5r": 0
+      }
+    },
+    {
+      "event_id": "da2328ee-5ecd-479b-abf9-ced837701ceb",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 4,
+      "kind": "epoch_committed",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "epoch": 1,
+        "history_revision": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+        "action_mt5r": 1.1
+      }
+    },
+    {
+      "event_id": "da2328ee-5ecd-479b-abf9-ced837701ceb",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 4,
+      "kind": "epoch_committed",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "epoch": 1,
+        "history_revision": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+        "action_mt5r": 0,
+        "validation_loss": "nan"
+      }
+    },
+    {
+      "event_id": "da2328ee-5ecd-479b-abf9-ced837701ceb",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 4,
+      "kind": "epoch_committed",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "epoch": 1,
+        "history_revision": "4edee375-d1ab-552c-88f8-6e21caaec165",
+        "action_mt5r": 0
+      }
+    },
+    {
+      "event_id": "5b4a9d8b-da7e-4890-bf4c-0ee4dc24d625",
+      "experiment_id": "51b4e4d7-edb3-52ca-8677-fd8f33e0f500",
+      "attempt_id": "6d2c244a-2cd0-5907-b869-55d4448c4289",
+      "sequence": 1,
+      "kind": "experiment_registered",
+      "observed_at": "2026-11-19T10:00:00Z",
+      "payload": {
+        "model": "sta2",
+        "configuration": {
+          "seed": 42
+        },
+        "secret": "no"
+      }
+    }
+  ]
+}

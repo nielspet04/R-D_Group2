@@ -177,6 +177,7 @@ def train_model(
             }
         )
         write_history(history_path, history)
+        monitor.epoch(history[-1], configuration=config.to_dict())
         monitor.update(completed_epoch=epoch, best_epoch=best_epoch, best_action_mt5r=best_score)
 
         if (
@@ -200,6 +201,7 @@ def train_model(
         map_location=device,
     )
 
+    monitor.update(completion_reason="early_stopping" if stopped_early else "max_epochs")
     return {
         "best_epoch": best_epoch,
         "best_action_mt5r": best_score,

@@ -1,0 +1,4 @@
+{
+  "apiUrl": "https://YOUR_PROJECT.supabase.co/functions/v1/monitor-ingest",
+  "keyFile": "~/.config/rd-dashboard/upload-key"
+}
