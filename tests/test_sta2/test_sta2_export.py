@@ -143,9 +143,12 @@ class E5ArtifactTests(unittest.TestCase):
         self.args.predictions = self.root / "predictions.pt"
         self.args.output = self.root / "submission.pt"
 
-    def artifact(self, observed_only=False, split="test"):
+    def artifact(self, observed_only=False, split="test", final_training=False):
         """Build a genuine E4-schema artifact with verified hashes and both fallback statuses."""
         checkpoint = make_checkpoint(observed_only=observed_only)
+        if final_training:
+            checkpoint["configuration"]["final_training"] = {"epochs": checkpoint["epoch"]}
+            checkpoint["best_metric"] = None
         checkpoint["configuration"]["head"].update(num_verbs=97, num_nouns=300)
         checkpoint["head_state"] = AnticipationHead(
             embed_dim=8, num_actions=5, num_verbs=97, num_nouns=300,
@@ -196,6 +199,16 @@ class E5ArtifactTests(unittest.TestCase):
                     self.assertEqual(set(exported), {"narration_id", "verb_output", "noun_output"})
                     np.testing.assert_array_equal(exported["verb_output"].numpy(), original["verb_probabilities"])
                     np.testing.assert_array_equal(exported["noun_output"].numpy(), original["noun_probabilities"])
+
+    def test_export_from_complete_final_retraining_checkpoint(self):
+        table = pd.read_csv(self.args.annotations)
+        table.to_csv(self.args.train_split, index=False)
+        table.iloc[:0].to_csv(self.args.validation_split, index=False)
+        self.priors = frequency_priors(table, num_verbs=97, num_nouns=300)
+        self.artifact(final_training=True)
+        result = export_submission(self.args)
+        self.assertEqual(result["events"], 4)
+        validate_file(self.args.output, ["z", "a", "m", "b"])
 
     def test_export_rejects_provenance_drift_and_fallback_replacement(self):
         """Wrong checkpoint/config/data/vocabulary/mode metadata or changed fallback blocks export."""

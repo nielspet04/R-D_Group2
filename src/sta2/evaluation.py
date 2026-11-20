@@ -169,9 +169,23 @@ def validate_checkpoint_metadata(
             "checkpoint epochs_without_improvement must be non-negative"
         )
 
-    best_metric = float(checkpoint["best_metric"])
-    if not math.isfinite(best_metric):
-        raise ValueError("checkpoint best_metric must be finite")
+    candidate_configuration = checkpoint.get("configuration")
+    final_training = (
+        candidate_configuration.get("final_training")
+        if isinstance(candidate_configuration, Mapping) else None
+    )
+    if final_training:
+        if not isinstance(final_training, Mapping):
+            raise ValueError("final_training must be a mapping")
+        if checkpoint["best_metric"] is not None:
+            raise ValueError("final checkpoint must not claim a validation metric")
+        target_epoch = _positive_int("final_training.epochs", final_training.get("epochs"))
+        if epoch != target_epoch:
+            raise ValueError("final retraining is incomplete; resume to its selected epoch before export")
+    else:
+        best_metric = float(checkpoint["best_metric"])
+        if not math.isfinite(best_metric):
+            raise ValueError("checkpoint best_metric must be finite")
 
     if not isinstance(checkpoint["head_state"], Mapping):
         raise ValueError("checkpoint head_state must be a mapping")
