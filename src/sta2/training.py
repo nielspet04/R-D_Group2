@@ -7,6 +7,7 @@ import math
 import os
 import random
 import subprocess
+import time
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
@@ -17,6 +18,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from torch import Tensor, nn
+from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim.lr_scheduler import LambdaLR
 
@@ -362,6 +364,7 @@ def train_one_epoch(
     local_action_sum = 0.0
     optimizer_steps = 0
     skipped_windows = 0
+    started = time.monotonic()
 
     for window in _windows(loader, steps_per_window):
         local_window_usable = sum(
@@ -488,6 +491,13 @@ def train_one_epoch(
         optimizer.step()
         scheduler.step()
         optimizer_steps += 1
+        if context.is_main and (optimizer_steps == 1 or optimizer_steps % 100 == 0):
+            print(json.dumps({
+                "event": "training_progress",
+                "optimizer_steps": optimizer_steps,
+                "rank0_events": local_events,
+                "elapsed_seconds": time.monotonic() - started,
+            }), flush=True)
 
     global_events = int(
         _all_reduce_sum(local_events, context.device)
@@ -564,14 +574,11 @@ def validate_one_epoch(
 
     model.eval()
     records: list[dict[str, Any]] = []
-    local_actions = 0
-    local_usable = 0
-    local_verb_sum = 0.0
-    local_noun_sum = 0.0
-    local_action_sum = 0.0
 
     with torch.inference_mode():
-        for cpu_batch in loader:
+        for batch_index, cpu_batch in enumerate(loader):
+            if context.is_main and batch_index % 1000 == 0:
+                print(json.dumps({"event": "validation_progress", "rank0_batches": batch_index}), flush=True)
             batch = _move_batch(cpu_batch, context.device)
             action_labels = encode_action_labels(
                 batch["verb_label"],
@@ -587,14 +594,6 @@ def validate_one_epoch(
                     batch["video"],
                     batch["has_context"],
                 )
-
-            losses = compute_sta2_losses(
-                outputs,
-                batch["verb_label"],
-                batch["noun_label"],
-                action_labels,
-                batch["has_context"],
-            )
 
             verb_scores = torch.softmax(
                 outputs["verb_logits"].float(),
@@ -615,6 +614,13 @@ def validate_one_epoch(
                 noun_scores,
                 noun_prior[None, :],
             )
+            # Keep per-event losses with the predictions so sampler padding
+            # is removed from loss denominators as well as ranking metrics.
+            per_event_losses = {
+                "verb_loss": F.cross_entropy(outputs["verb_logits"].float(), batch["verb_label"], reduction="none"),
+                "noun_loss": F.cross_entropy(outputs["noun_logits"].float(), batch["noun_label"], reduction="none"),
+                "action_loss": F.cross_entropy(outputs["action_logits"].float(), action_labels, ignore_index=-1, reduction="none"),
+            }
 
             for index in range(len(batch["row_index"])):
                 records.append({
@@ -628,6 +634,8 @@ def validate_one_epoch(
                         batch["noun_label"][index].item()
                     ),
                     "has_context": bool(usable[index].item()),
+                    "known_action": bool(action_labels[index].ge(0).item()),
+                    **{name: float(values[index].item()) for name, values in per_event_losses.items()},
                     "verb_scores": (
                         verb_scores[index].cpu().numpy()
                     ),
@@ -635,21 +643,6 @@ def validate_one_epoch(
                         noun_scores[index].cpu().numpy()
                     ),
                 })
-
-            local_usable += losses.usable_count
-            local_actions += losses.action_count
-            local_verb_sum += (
-                losses.verb_loss.item()
-                * losses.usable_count
-            )
-            local_noun_sum += (
-                losses.noun_loss.item()
-                * losses.usable_count
-            )
-            local_action_sum += (
-                losses.action_loss.item()
-                * losses.action_count
-            )
 
     if dist.is_initialized():
         gathered: list[list[dict[str, Any]] | None] = [
@@ -661,25 +654,6 @@ def validate_one_epoch(
             for rank_records in gathered
             for record in rank_records or []
         ]
-
-    global_usable = int(
-        _all_reduce_sum(local_usable, context.device)
-    )
-    global_actions = int(
-        _all_reduce_sum(local_actions, context.device)
-    )
-    global_verb_sum = _all_reduce_sum(
-        local_verb_sum,
-        context.device,
-    )
-    global_noun_sum = _all_reduce_sum(
-        local_noun_sum,
-        context.device,
-    )
-    global_action_sum = _all_reduce_sum(
-        local_action_sum,
-        context.device,
-    )
 
     metrics: dict[str, int | float] | None = None
 
@@ -737,6 +711,13 @@ def validate_one_epoch(
             noun_scores,
             evaluation_action_pairs,
         )
+        usable_records = [record for record in ordered if record["has_context"]]
+        action_records = [record for record in usable_records if record["known_action"]]
+        global_usable = len(usable_records)
+        global_actions = len(action_records)
+        global_verb_sum = sum(record["verb_loss"] for record in usable_records)
+        global_noun_sum = sum(record["noun_loss"] for record in usable_records)
+        global_action_sum = sum(record["action_loss"] for record in action_records)
         verb_loss = (
             global_verb_sum / global_usable
             if global_usable
@@ -840,7 +821,9 @@ def restore_rng_state(state: Mapping[str, Any]) -> None:
     torch.set_rng_state(state["torch"].cpu())
 
     if torch.cuda.is_available() and state["cuda"]:
-        torch.cuda.set_rng_state_all(state["cuda"])
+        # torch.load(map_location=cuda) also relocates RNG byte tensors;
+        # generator.set_state requires them on CPU.
+        torch.cuda.set_rng_state_all([value.cpu() for value in state["cuda"]])
 
 
 def get_git_provenance(
@@ -1080,9 +1063,21 @@ def fit(
             if not isinstance(saved_history, list):
                 raise ValueError("training history must contain a list")
 
-            history = saved_history
+            # Discard records newer than the checkpoint when recovering files.
+            history = [
+                item for item in saved_history
+                if int(item["epoch"]) <= int(checkpoint["epoch"])
+            ]
 
+    completed_epoch = start_epoch - 1
     for epoch in range(start_epoch, config.max_epochs + 1):
+        if epochs_without_improvement >= config.early_stopping_patience:
+            break
+        epoch_started = time.monotonic()
+        if context.device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(context.device)
+        if context.is_main:
+            print(json.dumps({"event": "epoch_start", "epoch": epoch}), flush=True)
         train_sampler.set_epoch(epoch)
         validation_sampler.set_epoch(epoch)
         train_dataset.set_epoch(epoch)
@@ -1099,6 +1094,8 @@ def fit(
         optimizer_step += int(
             train_metrics["train_optimizer_steps"]
         )
+        train_seconds = time.monotonic() - epoch_started
+        validation_started = time.monotonic()
         validation_metrics = validate_one_epoch(
             model,
             validation_loader,
@@ -1110,6 +1107,7 @@ def fit(
             config,
             context,
         )
+        validation_seconds = time.monotonic() - validation_started
         score = float(validation_metrics["action_mt5r"])
         improved = score > best_metric
 
@@ -1125,8 +1123,17 @@ def fit(
             **validation_metrics,
             "learning_rate": optimizer.param_groups[0]["lr"],
             "best_action_mt5r": best_metric,
+            "train_seconds": train_seconds,
+            "validation_seconds": validation_seconds,
+            "train_events_per_second": train_metrics["train_events"] / train_seconds,
+            "validation_events_per_second": validation_metrics["validation_events"] / validation_seconds,
+            "rank_peak_reserved_gpu_bytes": (
+                torch.cuda.max_memory_reserved(context.device)
+                if context.device.type == "cuda" else 0
+            ),
         }
         history.append(epoch_record)
+        completed_epoch = epoch
         rng_states = gather_rng_states(context)
 
         if context.is_main:
@@ -1159,9 +1166,25 @@ def fit(
                 )
 
             write_json_atomic(history_path, history)
+            print(json.dumps({"event": "epoch_complete", **epoch_record}), flush=True)
 
         if dist.is_initialized():
             dist.barrier()
+
+        # End cleanly at an epoch boundary if another epoch is unlikely to fit.
+        # No mid-epoch checkpoint is claimed; a first epoch must fit the job limit.
+        stop_for_walltime = False
+        if context.is_main and os.environ.get("SLURM_JOB_END_TIME"):
+            remaining = float(os.environ["SLURM_JOB_END_TIME"]) - time.time()
+            stop_for_walltime = remaining < 1.2 * (time.monotonic() - epoch_started) + 600
+        if dist.is_initialized():
+            payload = [stop_for_walltime]
+            dist.broadcast_object_list(payload, src=0)
+            stop_for_walltime = payload[0]
+        if stop_for_walltime:
+            if context.is_main:
+                print("Stopping at completed epoch before Slurm walltime; resume last.pt", flush=True)
+            break
 
         if (
             epochs_without_improvement
@@ -1171,9 +1194,7 @@ def fit(
 
     return {
         "best_action_mt5r": best_metric,
-        "completed_epoch": (
-            history[-1]["epoch"] if history else start_epoch - 1
-        ),
+        "completed_epoch": completed_epoch,
         "optimizer_step": optimizer_step,
         "history": history,
         "best_checkpoint": checkpoint_dir / "best.pt",

@@ -324,6 +324,14 @@ class FrozenAnticipationBackbone(nn.Module):
                         "Wrong predicted token count"
                     )
 
+        # Autocast chooses precision per operation: encoder normalization can
+        # return FP32 while the predictor's final linear projection returns
+        # BF16. Expose one dtype at the backbone/head boundary, promoting
+        # rather than discarding precision. Head operations still use AMP.
+        token_dtype = torch.promote_types(observed.dtype, future.dtype)
+        observed = observed.to(dtype=token_dtype)
+        future = future.to(dtype=token_dtype)
+
         if (
             not torch.isfinite(observed).all()
             or not torch.isfinite(future).all()

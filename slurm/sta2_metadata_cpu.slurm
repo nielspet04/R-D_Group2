@@ -16,8 +16,8 @@ set -euo pipefail
 module load cluster/wice/batch
 
 # Reuse the verified private environment; do not load Miniforge3.
-source /data/leuven/397/vsc39710/miniconda3/etc/profile.d/conda.sh
-conda activate /data/leuven/397/vsc39710/miniconda3/envs/rd_sta2
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
+conda activate "$VSC_DATA/conda_envs/rd_sta2"
 
 cd "${STA2_PROJECT_DIR:-$VSC_DATA/R-D_Group2}"
 
