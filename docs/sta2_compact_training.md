@@ -118,9 +118,42 @@ identities and complete video availability. The wrapper requests two H100s,
 16 CPU cores, 128000 MiB memory and up to 72 hours under `lp_edu_rdlab`.
 It starts a fresh model head, with no resume or dependency on Emiel's job.
 
+## A100 alternative during H100 maintenance
+
+`slurm/sta2_compact_a100.slurm` runs the same compact-head experiment on two
+A100 GPUs. It changes the partition, matching cluster module, job/log names
+and new-run directory to A100; BF16 and all model/data/training settings stay
+the same. Its 16 CPUs and 128000 MiB memory for two GPUs are within the
+[documented A100 resource limits](https://docs.vscentrum.be/leuven/slurm_specifics.html).
+
+Check live availability; a different partition is not a guarantee of an
+earlier start:
+
+```bash
+sinfo -M wice -p gpu_a100,gpu_h100,gpu_v100 -o "%P %a %l %D %t %G"
+```
+
+After pulling the new launcher, use
+`sbatch slurm/sta2_compact_a100.slurm`. If switching away from an H100 job,
+cancel only the pending H100 job after successful replacement submission:
+`scancel --state=PENDING OLD_H100_JOBID`. Do not leave two equivalent training
+jobs queued unintentionally. A100 logs are
+`logs/sta2-compact-a100-JOBID.out`, with outputs under
+`results/sta2/compact-a100-JOBID`.
+
+Keep `STA2_COMPACT_RESUME_RUN` unset for a fresh run. If resuming, use the A100
+launcher only with an existing A100 run; the resolved configuration includes
+output/input paths, and cross-launcher resume has not been validated.
+
+V100 is listed among the [wICE GPU partitions](https://docs.vscentrum.be/leuven/wice_quick_start.html)
+but does not provide native BF16. The current trainer supports BF16 or FP32,
+not an FP16/GradScaler path. A V100 attempt therefore needs an explicitly
+configured FP32 run and memory/throughput profiling before committing to full
+training. No V100 performance or fit claim has been established.
+
 ## Monitor and resume
 
-Replace JOBID with your new job ID:
+For the original H100 launcher, replace JOBID with your new job ID:
 
 ```bash
 squeue -u "$USER"
