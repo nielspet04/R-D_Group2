@@ -1,6 +1,6 @@
 # Exo2EgoPose speaking script
 
-Niels: slides 1–8. Emiel: slides 9–20. Slides 21–26 are backups. Rehearsal target: 19 minutes 30 seconds. All slides appear fully at once.
+Niels: slides 1–8. Emiel: slides 9–19. Slides 20–25 are backups. Planned speaking time: 19 minutes 00 seconds. Slide 14: Next shows the zipper zoom; Next again returns to the overview on slide 15.
 
 ## 1. Exo2EgoPose
 
@@ -228,21 +228,31 @@ Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose.
 
 ## 14. What the qualitative examples show
 
-Emiel · 55 seconds
+Emiel · 35 seconds
 
-These examples show what the predictions look like.
+These examples show what the predictions look like. We start with Pulling a zipper on the left.
 
-On the left, the person is pulling up a zipper with the right hand. On the right, the person is picking up a watch with both hands.
+Press Next once to show the animated close-up. It compares AR-VRM, Exo2EgoPose (Ours), and Ground truth (GT) at the same frame and zoom. Compare the hand orientation and finger shape with GT.
 
-Click Zoom model comparison on Pulling a zipper. The close-up shows AR-VRM, Exo2EgoPose (Ours), and Ground truth (GT) at the same frame and zoom. Compare hand orientation and finger shape with GT. Replay zoom repeats the animation; Close or Escape returns to both examples.
+Exo2EgoPose looks closer to the ground truth in this selected example. These are projected, scaled and aligned poses, so the picture does not establish accurate absolute 3D placement.
 
-Compared with the other methods, Exo2EgoPose produces hand shapes that look closer to the ground truth in these selected examples. We can compare the orientation of the hand and the shape of the fingers during the action.
-
-The authors project the 3D joints onto the images and scale and align them for visualization. That makes the hand shapes easier to compare, but these images alone don't show how accurate the absolute 3D placement is.
+Press Next again to return to the overview on the following slide and discuss the other pictures.
 
 Source: Fig.4; §4.4.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 15. What do reconstruction and modulation add?
+## 15. Qualitative examples: overview again
+
+Emiel · 20 seconds
+
+We are back at the overview. The full sequences show how the predicted hand shapes change over time.
+
+Now look at Picking up a watch on the right. This action uses both hands. Compare the orientation of the hands and the finger shapes across the model rows and the ground truth.
+
+These selected examples illustrate the predictions; the quantitative results provide the broader accuracy comparison.
+
+Source: Fig.4; §4.4.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+
+## 16. What do reconstruction and modulation add?
 
 Emiel · 90 seconds
 
@@ -262,9 +272,9 @@ Learning Exo context helps; using it for pose modulation improves the result fur
 
 Source: Table 2, AssemblyHands validation, selected ablations. Shi et al. (2026), Exo2EgoPose.
 
-## 16. Why evaluate human-to-robot transfer on CALVIN?
+## 17. Why evaluate human-to-robot transfer on CALVIN?
 
-Emiel · 45 seconds
+Niels · 45 seconds
 
 Lower hand-pose error tells us how well the model forecasts human movement. The authors also want to know whether its learned features are useful for robot control.
 
@@ -275,9 +285,10 @@ In this experiment, the robot policy trains on scenes A, B and C, and is tested 
 The human forecasting model acts as a teacher for a robot policy through feature distillation. This tests whether knowledge learned from human actions can help a robot perform manipulation tasks.
 
 Mees et al., CALVIN (2022) · Official repository and illustration (MIT)
+
 Sources: https://github.com/mees/calvin ; https://github.com/mees/calvin/blob/main/media/teaser.png ; Exo2EgoPose §4.4.5. CALVIN background from the benchmark authors; motivation and transfer procedure from Exo2EgoPose.
 
-## 17. CALVIN: completing tasks in sequence
+## 18. CALVIN: completing tasks in sequence
 
 Niels · 55 seconds
 
@@ -293,55 +304,23 @@ The improvement is not uniform: first-task performance is lower. So we should de
 
 Source: Shi et al., Exo2EgoPose, §4.4.5, Table 4, Avg.L. (ABC → D). Values: AR-VRM 3.29, Exo2EgoPose 3.38. Difference calculated from the displayed values: 0.09 tasks. The paper also reports Avg.R. 65.9% and 67.5%; those percentages are omitted from this slide to keep one interpretable unit. First-task success is 0.901 versus 0.859.
 
-## 18. What the evidence supports
+## 19. Takeaways, evidence and discussion
 
-Emiel · 60 seconds
+Emiel · 100 seconds
 
-For us, the main strength is that the model benefits from Exo supervision without requiring an Exo video during inference. The gains also appear on three benchmarks, and the ablations support the main components.
+To conclude, our message is: learn from Exo demonstrations during training; use Ego inputs at inference. A real third-person video is not required when making the forecast.
 
-There are still several limitations.
+There are three takeaways. First, forecast detailed future hand poses from Ego images, language and past poses. Second, learn Exo context at two levels: DERM predicts clip-level and frame-level features. Third, refine globally, then locally: GLMM uses those features to refine pose features before the joint predictions.
 
-Automatic pose labels and confidence filtering can bias which examples are included. The paper also doesn't report variation across training runs.
+On the right are the evidence and limitations. The evidence shows gains across three benchmarks. Ablations support DERM and GLMM: reconstruction helps, and adding modulation improves the result further. CALVIN results also show human-to-robot transfer in the evaluated robot tasks.
 
-The model assumes that previous hand poses are available. We don't know how much the results would change if those poses came from a noisy estimator.
+The limitations are equally important. Automatic labels may introduce bias, and there is no reported variation across training runs. Reliance on past pose inputs means that performance with noisy estimated poses remains uncertain. Root alignment hides absolute placement error: The hand shape can be correct while the whole hand is in the wrong place.
 
-Finally, root-aligned position error doesn't tell us whether the hand is reaching the correct absolute position. These are the main gaps we see between the reported benchmark results and a practical system.
+Our discussion question is: How reliable are forecasts with noisy poses and uncertain labels? How well does Exo2EgoPose work when its input hand poses or training labels are inaccurate?
 
-Source: Our analysis based on §4, Tables 1–4 and Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 19. The next experiments
 
-Emiel · 45 seconds
-
-We would start with three follow-up experiments.
-
-First, compare correctly paired Exo videos with shuffled pairs and videos shifted in time. That would test whether the gain comes from the matching demonstration, rather than just an extra training objective.
-
-Second, use estimated past poses instead of clean pose inputs. We would also test missing hands and incorrect or missing instructions.
-
-Third, repeat the experiments with multiple seeds, action-separated splits, and a manually checked set of pose labels.
-
-These are experiments we would propose. They would help show how reliable the improvement is and which information the model actually uses.
-
-Source: Proposed experiments by the presenters. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
-
-## 20. Takeaways and discussion
-
-Emiel · 40 seconds
-
-To conclude, there are three points we want to leave you with.
-
-The task is to predict detailed future hand poses from first-person images, language, and previous poses.
-
-The main idea is to learn third-person context at two levels during training, and then use those predicted features to refine the hand poses.
-
-The results show consistent improvements within the evaluated benchmarks. For us, the next step is to test how much those gains depend on paired supervision and reliable pose inputs.
-
-Thank you for listening. We're ready for the discussion.
-
-Source: Summary of the paper and our assessment. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
-
-## 21. Backup: full benchmark results
+## 20. Backup: full benchmark results
 
 Either · 0 seconds
 
@@ -353,7 +332,7 @@ Exo2EgoPose has the lowest reported error for both metrics on all three benchmar
 
 Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 22. Backup: dataset construction
+## 21. Backup: dataset construction
 
 Either · 0 seconds
 
@@ -369,7 +348,7 @@ EgoMe-pose uses automatic pose estimation followed by confidence and episode-val
 
 Source: §4.1.1; Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 23. Backup: efficiency and deployment
+## 22. Backup: efficiency and deployment
 
 Either · 0 seconds
 
@@ -383,7 +362,7 @@ A practical system would also need to obtain the previous hand poses. The effect
 
 Source: Table 3; calculated sums and percentages. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 24. Backup: likely questions
+## 23. Backup: likely questions
 
 Either · 0 seconds
 
@@ -397,7 +376,7 @@ For robotics, the result comes from feature distillation on CALVIN. It doesn't d
 
 Source: §3–4; our assessment. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 25. Backup: original method diagram
+## 24. Backup: original method diagram
 
 Either · 0 seconds
 
@@ -411,7 +390,7 @@ The actual Exo video is used for supervision during training. The model predicts
 
 Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 26. References and figure credits
+## 25. References and figure credits
 
 Either · 0 seconds
 

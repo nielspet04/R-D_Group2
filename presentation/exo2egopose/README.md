@@ -1,6 +1,6 @@
 # Exo2EgoPose research seminar
 
-This is the editable Reveal.js version, following the previous mid-term presentation’s local workflow. It has 20 main slides and 6 backups. The rehearsal target is 19:30. Niels presents slides 1–8 and Emiel presents slides 9–20.
+This is the editable Reveal.js version, following the previous mid-term presentation’s local workflow. It has 19 main slides and 6 backups. The planned speaking time is 19:00. Niels presents slides 1–8 and Emiel presents slides 9–19.
 
 ## Open and edit
 
@@ -35,9 +35,9 @@ Staged reveals and Mermaid node animations are disabled for presenting without a
 
 1. Choose **PDF view** in the toolbar.
 2. Print to PDF in Chrome or Edge, with background graphics, no browser headers/footers, and no margins.
-3. Check all 26 pages. All build steps must be visible. Notes and editing controls are excluded.
+3. Check all 25 pages. All build steps must be visible. Notes and editing controls are excluded.
 
-The main talk ends at slide 20. Backup slides support Q&A and do not extend the planned main talk. Both presenters should rehearse their own timing. The reviewing team leads the subsequent discussion.
+The main talk ends at slide 19. Backup slides support Q&A and do not extend the planned main talk. Both presenters should rehearse their own timing. The reviewing team leads the subsequent discussion.
 
 ## Sources and licenses
 
