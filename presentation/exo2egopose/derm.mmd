@@ -1,8 +1,9 @@
 flowchart LR
- X["Paired Exo clip"] --> M["Frozen MAE"]
- M --> G["Clip average<br/>global target"]
- M --> L["Future-frame sequence<br/>local target"]
- Q["Ego-conditioned<br/>queries"] --> PG["Predicted<br/>global vector"]
- Q --> PL["Predicted<br/>local sequence"]
- G -. "MSE" .-> PG
- L -. "MSE" .-> PL
+ X["Paired Exo video<br/>training only"] --> M["Frozen MAE"]
+ M --> Y["Target features:<br/>clip average + future-frame sequence"]
+ Q["Transformer's<br/>Exo-query features"] --> P["Predicted global vector<br/>+ local feature sequence"]
+ Y -. "MSE losses" .-> P
+ classDef target fill:#FCFCFA,stroke:#CBD5DA,color:#171B1E
+ classDef predicted fill:#E5EEF2,stroke:#9FB6C3,color:#171B1E
+ class X,M,Y target
+ class Q,P predicted

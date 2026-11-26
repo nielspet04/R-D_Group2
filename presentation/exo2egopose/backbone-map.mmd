@@ -1,0 +1,15 @@
+%%{init: {"themeVariables":{"fontSize":"18px"},"flowchart":{"padding":10,"rankSpacing":24,"nodeSpacing":18}}}%%
+flowchart LR
+ I["Ego inputs"] --> E["Encoders"]
+ E --> T["Causal<br/>transformer"]
+ T --> P["Pose features"]
+ T --> D["Exo-context branch<br/>(DERM)"]
+ P --> G["Refine pose features<br/>(GLMM)"]
+ D --> G
+ G --> O["Future 3D poses<br/>+ validity"]
+ classDef quiet fill:#F3F5F6,stroke:#DFE4E7,color:#788994
+ classDef active fill:#2D5263,stroke:#2D5263,color:#FFFFFF
+ class I,E,T,P,D,G,O quiet
+ class E,T active
+ linkStyle default stroke:#BBC7CE,stroke-width:1.2px
+ linkStyle 0,1 stroke:#2D5263,stroke-width:1.8px

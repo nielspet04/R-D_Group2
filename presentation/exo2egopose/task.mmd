@@ -1,0 +1,11 @@
+flowchart LR
+ V["Past Ego video"] --> M["Forecasting model"]
+ P["Past 3D hand poses"] --> M
+ L["Language instruction"] --> M
+ M --> F["10 future<br/>3D hand poses"]
+ classDef input fill:#FCFCFA,stroke:#CBD5DA,color:#171B1E
+ classDef model fill:#ECEFF0,stroke:#ECEFF0,color:#171B1E
+ classDef output fill:#2D5263,stroke:#2D5263,color:#FFFFFF
+ class V,P,L input
+ class M model
+ class F output

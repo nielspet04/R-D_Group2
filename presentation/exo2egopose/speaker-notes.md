@@ -1,6 +1,6 @@
 # Exo2EgoPose speaking script
 
-Niels: slides 1–8. Emiel: slides 9–18. Slides 19–24 contain spoken answers for Q&A. Timing labels are rehearsal targets.
+Niels: slides 1–8. Emiel: slides 9–18. Slides 19–24 are backups. Timing labels are rehearsal targets. All slides appear fully at once.
 
 ## 1. Exo2EgoPose
 
@@ -26,21 +26,27 @@ A third-person camera can show more of the person, the objects, and the overall 
 
 The idea is to learn from both views during training, so the model can make better predictions when it only has the first-person inputs.
 
+To understand what this extra view should help with, we first need to define exactly what the model predicts.
+
 Source: Fig.1, pp.1–2. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 3. The forecasting task
+## 3. Predicting the next ten hand poses
 
 Niels · 65 seconds
 
-The model gets three inputs: a short sequence of first-person images, a language instruction, and the previous 3D hand poses.
+This slide separates what the model already knows from what it has to predict.
 
-For example, the instruction could be “pull up the zipper with your right hand.” The model then predicts the hand poses for the next ten frames.
+On the left, there are three inputs: the previous first-person images, the previous 3D hand poses, and a language instruction. All three go into the same model.
 
-There are 21 joints per hand, so 42 joints in total. For each joint, it predicts three coordinates and whether the joint is valid.
+For example, the instruction could be “pull up the zipper with your right hand.” The model then predicts how the hands will move over the next ten frames, shown on the right.
 
-The forecast covers about two-thirds of a second at 15 frames per second, or one-third of a second at 30 frames per second.
+For every future frame, it predicts the 3D position of 42 joints, so 21 per hand, and whether each joint is valid.
 
-So the task is to predict future hand movements. It also assumes that the previous hand poses are available as an input.
+Ten frames is a short forecast: about two-thirds of a second at 15 frames per second, or one-third of a second at 30 frames per second.
+
+So we're using what we know now to predict the next hand movements.
+
+Now that we know the inputs and outputs, we can compare this task with earlier work and see what Exo2EgoPose adds.
 
 Source: §3.1, §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
@@ -56,57 +62,61 @@ Methods such as MCIL and HULC use language to guide robot actions. GR-1 and AR-V
 
 Exo2EgoPose brings these ideas together. It predicts detailed future hand poses from several inputs, and it uses a third-person demonstration as extra supervision during training.
 
-For the experiments, the authors adapt the comparison methods to this task and use common backbones. The numbers are therefore results from those adapted versions.
+The extra idea here is to learn third-person context during training. We can now open the forecasting model and see where that information enters.
 
 Source: §2; Appendix A. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 5. The forecasting pipeline
+## 5. The model: two feature paths, one pose forecast
 
 Niels · 70 seconds
 
-This diagram shows the full pipeline.
+We can now open the forecasting model from slide three and follow the information through it.
 
-First, the model encodes the first-person images, the instruction, and the previous hand poses. These features go into a causal transformer.
+The three Ego inputs first go through their encoders and a shared causal transformer. After that, there are two feature paths.
 
-The transformer produces pose queries and predicted Exo features. The pose queries are the features that will be used to predict the future hand poses.
+The upper path contains the pose features. These carry the information for predicting the future hand poses.
 
-DERM learns the Exo features at two levels: one representation for the clip, and a sequence of representations for the future frames.
+The lower path predicts Exo context. This is the part called DERM: the Dual-level Exocentric Reconstruction Module. During training, paired third-person video teaches this branch what features to predict.
 
-GLMM then uses those predicted features to refine the pose queries before the final prediction.
+Both paths meet in GLMM, the Global-to-Local Modulation Module. It uses the predicted Exo context to refine the pose features before the final hand-pose prediction.
 
-The third-person video provides the training targets for this process. The model reconstructs feature vectors, rather than generating an actual third-person video.
+We'll now follow this same map: first the encoders and transformer, then the DERM branch, and then the refinement step.
 
-Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Simplified overview. Figures CC BY 4.0.
 
-## 6. Multimodal tokens and queries
+## 6. The shared backbone: encoders and transformer
 
 Niels · 60 seconds
 
-The model uses a separate encoder for each type of input.
+We're now looking at the highlighted backbone in the same model map.
 
-The instruction goes through a CLIP text encoder. The images go through MAE and DINOv2, and the previous hand poses go through HandFormer.
+Each input has its own encoder. The images use MAE and DINOv2 for pixel and semantic features, with 196 visual tokens reduced to nine per encoder. The instruction uses CLIP, and the past poses use HandFormer.
 
-The visual features are reduced from 196 tokens to nine per encoder. This makes the sequence smaller before the features are combined.
+These tokens go into a shared 12-layer causal transformer with hidden size 384. Time embeddings identify the frame order, and the causal mask prevents access to future input observations.
 
-The combined tokens go into a 12-layer causal transformer. Time embeddings tell the model which observations belong to which moment.
+The transformer also processes learned query slots. Pose-query features enter the upper path. Global and frame-level Exo-query features enter the lower DERM path.
 
-There are also different query types for the future poses, the global Exo representation, the local Exo representations, and an auxiliary future Ego image. These queries let the same transformer produce the different outputs needed during training.
+The Ego-image queries serve a separate training objective: reconstructing the image at time t plus three.
+
+So the backbone gives us the features for both paths. Next we'll follow the lower one and see how DERM learns the Exo context.
 
 Source: §3.2–3.3; §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 7. DERM learns two Exo targets
+## 7. DERM: training the Exo-context branch
 
 Niels · 85 seconds
 
-DERM learns two kinds of information from the third-person video.
+DERM teaches the first-person model to predict useful information from a third-person view.
 
-For the global target, the authors take MAE features from the aligned clip and average them. This gives one vector covering the observed part and the future prediction window.
+During training, we have both videos. The real third-person video goes through a frozen MAE encoder. This turns the frames into lists of numbers describing their visual content. Those numbers give us the targets.
 
-For the local targets, they keep a separate feature vector for each frame in the future window. This preserves more of the frame-by-frame detail.
+Separately, the model uses the first-person video, instruction, and past hand poses to predict what those Exo features should be.
 
-The transformer predicts both targets from the first-person inputs. Mean squared error measures the difference between the predicted features and the features extracted from the real third-person video.
+We then compare the predicted features with the features from the real Exo video. MSE measures the difference, and training adjusts the model to make that difference smaller.
 
-For EgoMe, the two views are not synchronized. The authors align them using their relative position within the activity. That gives an approximate match, but it can still introduce alignment errors.
+This happens at two levels. One target is a single summary of the clip, made by averaging its frame features. The other target keeps a separate feature vector for each future frame. That's why it's called dual-level.
+
+The model is learning to predict these feature vectors, rather than generating another video. Its predicted Exo features then go to GLMM to help refine the hand-pose features. The real Exo video is only needed during training.
 
 Source: §3.3, Eqs.10–15. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
@@ -124,23 +134,25 @@ So it doesn't need a third-person camera or future video at test time. The extra
 
 A remaining question is how much this depends on the correct pairing and timing of the videos. We'll come back to that in our discussion.
 
-Emiel will now explain how the predicted Exo features are used to improve the hand poses.
+On our model map, both the pose path and the Exo-context path remain active during inference. Only the real Exo video and its training targets are removed. Emiel will now explain GLMM, where those two paths meet.
 
 Source: §3.1–3.4. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 9. GLMM refines poses globally, then locally
+## 9. GLMM: where the two feature paths meet
 
 Emiel · 85 seconds
 
-Once the model has predicted the Exo features, GLMM uses them in two steps.
+We're now at the point where the two feature paths meet. GLMM stands for Global-to-Local Modulation Module.
 
-First comes global modulation. The predicted clip vector changes the scale and shift of the normalized pose features. Cross-attention also combines the pose queries with this global information.
+It receives the pose features from the upper path and the predicted Exo features from DERM below. Its job is to improve the pose features before the final prediction.
 
-Then comes local modulation. The pose features attend to the predicted frame-level features, and a learned gate controls how much of that information is added.
+First, the global Exo vector conditions the pose features through adaptive normalization and cross-attention. This brings in information summarized over the clip.
 
-This attention provides a soft alignment between the pose queries and the frame features. That is useful when their timing does not match perfectly.
+Next, the frame-level Exo sequence provides more local guidance. Cross-attention allows soft alignment, and a learned gate controls how much information is added.
 
-The formula at the bottom is adaptive layer normalization. Gamma changes the scale, and beta changes the shift. The aim is to adjust the pose features using the context learned from the Exo view.
+The formula at the bottom is adaptive layer normalization. Gamma changes the scale and beta changes the shift of the normalized features.
+
+The refined pose features then go to the final head, which predicts the future 3D hand poses and joint validity.
 
 Source: Fig.3; §3.4, Eqs.16–22. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 

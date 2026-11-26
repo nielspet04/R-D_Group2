@@ -9,7 +9,7 @@ Double-click `Start.command` on macOS. It starts the local editor at http://loca
 The toolbar appears at the top right when hovered.
 
 - **E / Edit:** edit text and table cells directly. Finish editing or pause briefly, then wait for **Saved**. Changes are written to `index.html` and survive a refresh.
-- **M / Mermaid:** on a diagram slide (5, 7, 8, 9), edit the actual Mermaid code and choose **Apply & save**. You can download its `.mmd` source. Diagram labels, nodes and connections remain editable.
+- **M / Mermaid:** on a diagram slide (3, 5, 6, 7, 8, 9), edit the actual Mermaid code and choose **Apply & save**. You can download its `.mmd` source. Diagram labels, nodes and connections remain editable.
 - **Layout & animation:** select an object by clicking it. Change its position, size, font size, entrance effect, duration and build order. Objects sharing a build step appear together. Choose **none** to keep an object visible throughout the slide. Enable **Drag objects** to move items. Choose **Present this slide** to preview the builds.
 - **Charts:** select the chart on slide 12 or 14, then choose **Edit values** in Layout & animation. Edit its categories, series names and numeric arrays.
 - **Pictures:** select an image in Layout & animation, then use **Replace image**. The replacement is embedded in the saved configuration. Use images under 6 MB.
@@ -44,3 +44,7 @@ The main talk ends at slide 18. Backup slides support Q&A and do not extend the 
 Content and figures: Shi et al., *Exo2EgoPose*, arXiv:2607.15890v2 / ACM Multimedia 2026. Original figures are credited under CC BY 4.0. Sources also appear in the slide footers, notes and references slide.
 
 Reveal.js 5.2.1 and Mermaid 10.9.3 are bundled locally under their MIT licenses. The separate `.mmd` files are the initial diagram sources; after browser edits, the authoritative updated source is embedded in `index.html` and can be downloaded from the Mermaid editor. Charts, tables, notes, layout and animation configuration are also saved in that HTML.
+
+## Following the model
+
+Slide 5 opens the forecasting model into a shared backbone and two feature paths. Slide 6 highlights the encoders and transformer. Slide 7 follows the lower Exo-context branch, DERM. Slide 8 separates training-only supervision from inference inputs. Slide 9 returns to the same map and highlights GLMM, where predicted Exo context refines the upper pose-feature path.
