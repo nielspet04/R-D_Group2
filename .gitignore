@@ -12,6 +12,7 @@ venv/
 rd_lab/
 .env
 .env.*
+configs/monitoring.local.json
 
 # Jupyter
 .ipynb_checkpoints/
@@ -52,3 +53,15 @@ wandb/
 
 # Slurm logs
 logs/
+
+# Hosted dashboard build/runtime state
+node_modules/
+dist/
+supabase/.temp/
+.supabase/
+configs/monitoring-hosted.local.json
+configs/monitor-upload.local.json
+upload-key*
+tmp/
+/dashboard-vsc*.zip
+/hosted-*.zip

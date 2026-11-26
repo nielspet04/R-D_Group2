@@ -16,6 +16,7 @@ from typing import Any
 
 import numpy as np
 import torch
+from src.run_monitor import monitor
 import torch.distributed as dist
 from torch import Tensor, nn
 from torch.nn import functional as F
@@ -1075,10 +1076,15 @@ def fit(
                 if int(item["epoch"]) <= int(checkpoint["epoch"])
             ]
 
+    if resume is not None and context.is_main:
+        monitor.confirm_resume(start_epoch-1, resolved_config)
     completed_epoch = start_epoch - 1
+    completion_reason = "final_epochs" if final_training else "max_epochs"
     for epoch in range(start_epoch, (final_epochs or config.max_epochs) + 1):
         if not final_training and epochs_without_improvement >= config.early_stopping_patience:
             break
+        if context.is_main:
+            monitor.update(phase="training", epoch=epoch, max_epochs=config.max_epochs)
         epoch_started = time.monotonic()
         if context.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(context.device)
@@ -1101,6 +1107,8 @@ def fit(
             train_metrics["train_optimizer_steps"]
         )
         train_seconds = time.monotonic() - epoch_started
+        if context.is_main and not final_training:
+            monitor.update(phase="validation")
         validation_started = time.monotonic()
         validation_metrics = {} if final_training else validate_one_epoch(
             model,
@@ -1144,6 +1152,7 @@ def fit(
         rng_states = gather_rng_states(context)
 
         if context.is_main:
+            monitor.update(phase="checkpointing")
             save_arguments = {
                 "model": model,
                 "optimizer": optimizer,
@@ -1173,6 +1182,8 @@ def fit(
                 )
 
             write_json_atomic(history_path, history)
+            monitor.epoch(epoch_record, configuration=resolved_config, resumed_from_epoch=start_epoch-1 if resume else None)
+            monitor.update(completed_epoch=epoch, best_action_mt5r=best_metric)
             print(json.dumps({"event": "epoch_complete", **epoch_record}), flush=True)
 
         if dist.is_initialized():
@@ -1189,6 +1200,7 @@ def fit(
             dist.broadcast_object_list(payload, src=0)
             stop_for_walltime = payload[0]
         if stop_for_walltime:
+            completion_reason = "walltime_boundary"
             if context.is_main:
                 print("Stopping at completed epoch before Slurm walltime; resume last.pt", flush=True)
             break
@@ -1197,8 +1209,11 @@ def fit(
             not final_training and epochs_without_improvement
             >= config.early_stopping_patience
         ):
+            completion_reason = "early_stopping"
             break
 
+    if context.is_main:
+        monitor.update(completion_reason=completion_reason)
     return {
         "best_action_mt5r": best_metric,
         "completed_epoch": completed_epoch,

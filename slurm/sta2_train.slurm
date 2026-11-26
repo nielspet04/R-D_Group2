@@ -113,6 +113,10 @@ unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 # than the original cpu count encoded in SLURM_TRES_PER_TASK.
 unset SLURM_TRES_PER_TASK
 
+if [[ -n "${RND_MONITOR_API_URL:-}" && -n "${output_dir:-}" ]]; then
+    trap 'rnd_exit=$?; "$STA2_PYTHON" scripts/monitor_lifecycle.py --output-root "$output_dir" --exit-code "$rnd_exit" || true' EXIT
+fi
+
 # One launcher, one process per GPU. The trainer owns DDP and accumulation.
 # Resolve Python before srun: the step's PATH may differ from the batch shell.
 srun --ntasks=1 --export=ALL "$STA2_PYTHON" -m torch.distributed.run \

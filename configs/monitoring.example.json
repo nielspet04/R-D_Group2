@@ -1,0 +1,7 @@
+{
+  "wandb_project": "YOUR_TEAM/YOUR_PROJECT",
+  "cluster": "wice",
+  "interval": 120,
+  "db": "results/monitoring/dashboard.sqlite3",
+  "port": 8790
+}

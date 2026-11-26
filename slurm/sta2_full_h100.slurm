@@ -38,8 +38,8 @@ if [[ -n "${STA2_RESUME_RUN:-}" ]]; then
     test -s "$output_dir/history.json"
     resume_args=(--resume "$output_dir/checkpoints/last.pt")
 else
-    output_dir="results/sta2/full-h100-$SLURM_JOB_ID"
-    if [[ -e "$output_dir" ]]; then
+    output_dir="${RND_OUTPUT_ROOT:-results/sta2/full-h100-$SLURM_JOB_ID}"
+    if [[ -e "$output_dir" && ( -z "${RND_OUTPUT_ROOT:-}" || -e "$output_dir/history.json" || -d "$output_dir/checkpoints" ) ]]; then
         printf 'Output already exists; use explicit resume: %s\n' "$output_dir" >&2
         exit 2
     fi
