@@ -1,197 +1,372 @@
-# Exo2EgoPose rehearsal notes
+# Exo2EgoPose speaking script
 
-Main talk: 18.583333333333332 minutes. Slides 19–24 are backup only. Niels presents slides 1–8; Emiel presents slides 9–18.
-
-Browser controls: arrow keys to navigate, F fullscreen, N speaker notes, B backup, H home. Test fullscreen on the presentation laptop. Submit the PDF to Toledo before the session. Attendance is mandatory. The reviewing team leads the 20–25 minute discussion. The seminar email specifies live Poll Everywhere Q&A.
+Niels: slides 1–8. Emiel: slides 9–18. Slides 19–24 contain spoken answers for Q&A. Timing labels are rehearsal targets.
 
 ## 1. Exo2EgoPose
 
 Niels · 35 seconds
 
-Open with the question: can a third-person demonstration teach a first-person model what its hands will do next? Introduce Emiel and yourself. This is Shi et al., ACM Multimedia 2026, not our own method. Preview task, mechanism, evidence and critique.
+Hi everyone. I'm Niels, and together with Emiel, I'll present Exo2EgoPose, a paper by Shi and colleagues from ACM Multimedia 2026.
 
-Source: p.1
+The main question is whether a third-person demonstration can help a first-person model predict what someone's hands will do next.
+
+I'll start with the problem and the main idea behind the method. Emiel will then explain how the model refines its predictions, go through the results, and discuss the strengths and limitations.
+
+Source: p.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 2. What the Ego camera misses
 
 Niels · 55 seconds
 
-Ego cameras see what is in front of the wearer, so hands and objects may be truncated. Head motion changes the background. Exo demonstrations offer complementary context. Stable and holistic is the paper’s motivation, not a guarantee for every capture. Use the real paired images to explain this.
+The problem starts with the first-person camera. It moves with the person's head, and it only sees part of the scene. A hand or an object can disappear from the image, even though the action is still happening.
 
-Source: Fig.1, pp.1–2
+That makes it difficult to understand the full interaction and predict the next movement.
+
+A third-person camera can show more of the person, the objects, and the overall action. That's the extra information the authors want to use.
+
+The idea is to learn from both views during training, so the model can make better predictions when it only has the first-person inputs.
+
+Source: Fig.1, pp.1–2. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 3. The forecasting task
 
 Niels · 65 seconds
 
-Inputs are past Ego RGB, a language instruction and past 3D hand poses. Output is ten future frames of 42 3D joints and joint validity. Coordinates are in the Ego camera system. Forecasting is different from estimating the current pose. Ten frames correspond to about 0.67 seconds at 15 fps and 0.33 seconds at 30 fps. Past pose availability is a deployment assumption.
+The model gets three inputs: a short sequence of first-person images, a language instruction, and the previous 3D hand poses.
 
-Source: §3.1, §4.1.3
+For example, the instruction could be “pull up the zipper with your right hand.” The model then predicts the hand poses for the next ten frames.
+
+There are 21 joints per hand, so 42 joints in total. For each joint, it predicts three coordinates and whether the joint is valid.
+
+The forecast covers about two-thirds of a second at 15 frames per second, or one-third of a second at 30 frames per second.
+
+So the task is to predict future hand movements. It also assumes that the previous hand poses are available as an input.
+
+Source: §3.1, §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 4. Where the paper fits
 
 Niels · 65 seconds
 
-USST forecasts coarse 3D hand trajectories; OCT and MADiff are other motion forecasting precedents. MCIL and HULC condition robot policies on language. GR-1 learns through human video pretraining. AR-VRM uses hand-keypoint pretraining and analogical reasoning. Exo2EgoPose combines joint-level forecasting with training-time Exo feature supervision. Baselines here are adapted, not verbatim published results.
+There are a few research directions that lead to this paper.
 
-Source: §2; Appendix A
+Methods such as USST predict future hand trajectories. They mainly describe the overall movement, rather than the detailed position of every finger joint.
+
+Methods such as MCIL and HULC use language to guide robot actions. GR-1 and AR-VRM also learn from human data to help with robot manipulation.
+
+Exo2EgoPose brings these ideas together. It predicts detailed future hand poses from several inputs, and it uses a third-person demonstration as extra supervision during training.
+
+For the experiments, the authors adapt the comparison methods to this task and use common backbones. The numbers are therefore results from those adapted versions.
+
+Source: §2; Appendix A. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 5. The forecasting pipeline
 
 Niels · 70 seconds
 
-Walk left to right. Encoders produce tokens, the causal transformer decodes pose and Exo queries, DERM learns two Exo representations, and GLMM refines pose features. Actual Exo video supplies feature targets during training only. At test time those features are predicted from the available Ego inputs. Reconstruction refers to feature vectors, not photorealistic Exo video.
+This diagram shows the full pipeline.
 
-Source: Fig.2; §3
+First, the model encodes the first-person images, the instruction, and the previous hand poses. These features go into a causal transformer.
+
+The transformer produces pose queries and predicted Exo features. The pose queries are the features that will be used to predict the future hand poses.
+
+DERM learns the Exo features at two levels: one representation for the clip, and a sequence of representations for the future frames.
+
+GLMM then uses those predicted features to refine the pose queries before the final prediction.
+
+The third-person video provides the training targets for this process. The model reconstructs feature vectors, rather than generating an actual third-person video.
+
+Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 6. Multimodal tokens and queries
 
 Niels · 60 seconds
 
-CLIP text, frozen MAE and DINOv2 visual encoders, and trainable HandFormer for poses. Visual tokens are resampled from 196 to 9 per encoder. Tokens enter a 12-layer causal transformer with hidden size 384 and time embeddings. Distinct query types request pose, global Exo, future frame Exo and an auxiliary future Ego image. Avoid overloading the audience with every dimension.
+The model uses a separate encoder for each type of input.
 
-Source: §3.2–3.3; §4.1.3
+The instruction goes through a CLIP text encoder. The images go through MAE and DINOv2, and the previous hand poses go through HandFormer.
+
+The visual features are reduced from 196 tokens to nine per encoder. This makes the sequence smaller before the features are combined.
+
+The combined tokens go into a 12-layer causal transformer. Time embeddings tell the model which observations belong to which moment.
+
+There are also different query types for the future poses, the global Exo representation, the local Exo representations, and an auxiliary future Ego image. These queries let the same transformer produce the different outputs needed during training.
+
+Source: §3.2–3.3; §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 7. DERM learns two Exo targets
 
 Niels · 85 seconds
 
-Video-level target averages MAE CLS features across the aligned past-plus-future window. Frame-level targets are individual MAE CLS features for the future chunk. Decoded Ego-conditioned queries regress these targets with MSE. The global vector summarizes motion across the clip, while the frame sequence preserves local spatial detail. For asynchronous EgoMe videos, linear relative-time alignment is used. This alignment can be imperfect.
+DERM learns two kinds of information from the third-person video.
 
-Source: §3.3, Eqs.10–15
+For the global target, the authors take MAE features from the aligned clip and average them. This gives one vector covering the observed part and the future prediction window.
+
+For the local targets, they keep a separate feature vector for each frame in the future window. This preserves more of the frame-by-frame detail.
+
+The transformer predicts both targets from the first-person inputs. Mean squared error measures the difference between the predicted features and the features extracted from the real third-person video.
+
+For EgoMe, the two views are not synchronized. The authors align them using their relative position within the activity. That gives an approximate match, but it can still introduce alignment errors.
+
+Source: §3.3, Eqs.10–15. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 8. Training and inference use different information
 
 Niels · 55 seconds
 
-Explicitly answer the potential leakage question. Future Exo frames are privileged supervision during training; they are not passed to the deployed forecaster. Test inputs remain language, past Ego RGB and past hand states. This resembles learning with privileged information. The targets may nevertheless encourage reliance on temporal alignment or dataset regularities, motivating controls. Hand off: Emiel will explain how the predicted Exo features improve pose predictions.
+This distinction between training and inference is important.
 
-Source: §3.1–3.4
+During training, the model can use features from the paired third-person video as targets. Those targets can include future frames.
+
+During inference, the model only receives the previous first-person images, the instruction, and the previous hand poses. It has to predict the Exo features internally.
+
+So it doesn't need a third-person camera or future video at test time. The extra view teaches the model during training.
+
+A remaining question is how much this depends on the correct pairing and timing of the videos. We'll come back to that in our discussion.
+
+Emiel will now explain how the predicted Exo features are used to improve the hand poses.
+
+Source: §3.1–3.4. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 9. GLMM refines poses globally, then locally
 
 Emiel · 85 seconds
 
-Global modulation derives scale, shift and residual weights from one reconstructed clip vector, plus cross-attention. Local modulation cross-attends over predicted frame features, then uses a learned gate and adaptive normalization. Soft alignment accommodates imperfect temporal correspondence. The normalized pose features become (1+gamma) times LN(x) plus beta. Do not say that attention alone proves geometric understanding.
+Once the model has predicted the Exo features, GLMM uses them in two steps.
 
-Source: Fig.3; §3.4, Eqs.16–22
+First comes global modulation. The predicted clip vector changes the scale and shift of the normalized pose features. Cross-attention also combines the pose queries with this global information.
+
+Then comes local modulation. The pose features attend to the predicted frame-level features, and a learned gate controls how much of that information is added.
+
+This attention provides a soft alignment between the pose queries and the frame features. That is useful when their timing does not match perfectly.
+
+The formula at the bottom is adaptive layer normalization. Gamma changes the scale, and beta changes the shift. The aim is to adjust the pose features using the context learned from the Exo view.
+
+Source: Fig.3; §3.4, Eqs.16–22. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 10. The training objective
 
 Emiel · 50 seconds
 
-Pose coordinates use Smooth L1. Joint validity uses BCE for missing or irrelevant hands and joints. Exo targets use MSE, and an auxiliary MAE-style decoder reconstructs the third future Ego image. The pose loss weight is 3000. Raw loss scales therefore should not be compared without the weights. All image reconstruction branches serve training.
+The model is trained with several losses.
 
-Source: Eqs.15,23; §4.1.3
+Smooth L1 measures the error in the predicted joint coordinates. Binary cross-entropy handles joint validity, for example when a hand is missing or not involved in the action.
+
+The global and local Exo features use mean squared error. There is also an auxiliary task that reconstructs the third future first-person image.
+
+The pose loss has a weight of 3,000, while the other terms have different weights. These weights balance the different training objectives.
+
+Together, the losses train the model to predict the future poses and learn useful visual context.
+
+Source: Eqs.15,23; §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 11. Evaluation across three benchmarks
 
 Emiel · 65 seconds
 
-AssemblyHands is toy assembly with paired synchronized views. Ego-Exo4D is broader skilled activity with mixed manual and automatic pose annotations. EgoMe-pose is newly pseudo-labeled with InterHand and RootNet and filtered. Metrics: MPJPE is root-aligned joint position error in mm; MPJVE compares joint displacements and is reported in mm. Different fps and label protocols mean absolute errors are not directly comparable across datasets.
+The authors evaluate the method on three benchmarks.
 
-Source: §4.1; Appendix B
+AssemblyHands contains toy assembly activities with synchronized first-person and third-person videos.
+
+Ego-Exo4D covers a wider range of skilled activities and includes both manual and automatic pose annotations.
+
+EgoMe-pose is constructed for this paper. The authors estimate the hand poses automatically with InterHand and RootNet, and then filter the annotations.
+
+They report two metrics. MPJPE measures joint position error after root alignment. MPJVE measures the error in joint displacement between frames. Lower is better for both.
+
+The datasets have different frame rates and annotation procedures, so we compare methods within each dataset rather than comparing the absolute errors across datasets.
+
+Source: §4.1; Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 12. Position error falls on every benchmark
 
 Emiel · 75 seconds
 
-Read each within-dataset comparison. AR-VRM versus ours gives 33.39 to 25.83, 44.46 to 36.44, and 56.06 to 49.44 mm. Relative reductions are 22.6, 18.0 and 11.8 percent. GR-1 is slightly better than AR-VRM in Ego-Exo4D MPJPE at 44.29, so against the best baseline that reduction is 17.7 percent. These are test results, not the validation ablation numbers. No uncertainty intervals are reported.
+Exo2EgoPose has the lowest position error on all three benchmarks.
 
-Source: Table 1; percentages calculated from Table 1
+Compared with AR-VRM, the error on AssemblyHands goes from 33.39 to 25.83 millimeters. On Ego-Exo4D, it goes from 44.46 to 36.44. On EgoMe-pose, it goes from 56.06 to 49.44.
+
+That gives the reductions shown below: 22.6 percent, 18 percent, and 11.8 percent.
+
+There is one detail in the comparison: GR-1 is slightly better than AR-VRM on Ego-Exo4D. Against that strongest position-error baseline, the reduction is 17.7 percent.
+
+So the improvement is consistent, but its size differs across datasets. The paper doesn't report confidence intervals, so we can't judge the variation across training runs.
+
+Source: Table 1; percentages calculated from Table 1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 13. What the qualitative examples show
 
 Emiel · 55 seconds
 
-Ask the audience to look at right-hand orientation and the grasping shape relative to GT. These are selected examples from Figure 4. Predicted 3D joints were projected to 2D and linearly scaled and aligned with stride 2. They help show hand shape, but are not independent evidence of accurate absolute 3D placement or a failure-rate estimate.
+These examples show what the predictions look like.
 
-Source: Fig.4; §4.4.1
+On the left, the person is pulling up a zipper with the right hand. On the right, the person is picking up a watch with both hands.
+
+Compared with the other methods, Exo2EgoPose produces hand shapes that look closer to the ground truth in these selected examples. We can compare the orientation of the hand and the shape of the fingers during the action.
+
+The authors project the 3D joints onto the images and scale and align them for visualization. That makes the hand shapes easier to compare, but these images alone don't show how accurate the absolute 3D placement is.
+
+Source: Fig.4; §4.4.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 14. What each component adds
 
 Emiel · 70 seconds
 
-Use validation values only. Full model 25.37. Keeping Exo reconstruction but removing both modulation modules gives 30.11. Removing all proposed modules gives 39.70. Replacing both modulation modules by vanilla transformer layers yields 26.44. Ablation supports the architecture, but the 39.70 to 25.37 difference bundles several changes. The prose mentions a 9.59 degradation relative to the 30.11 row; the full-versus-baseline difference is 14.33. Prefer explicit table comparisons.
+The ablation study tests what the different components contribute. These numbers are from the AssemblyHands validation set.
 
-Source: Table 2, AssemblyHands validation
+Without the proposed Exo modules, the position error is 39.70 millimeters. Adding the Exo reconstruction reduces it to 30.11.
+
+With both reconstruction and GLMM, the error goes down to 25.37. So adding the designed modulation gives another improvement of 4.74 millimeters.
+
+The authors also replace the modulation modules with ordinary transformer layers. That version reaches 26.44 millimeters, which is slightly worse than the full model.
+
+These results support both reconstruction and modulation. The overall difference between the baseline and the full model combines several changes, so we shouldn't attribute that entire gain to one component.
+
+Source: Table 2, AssemblyHands validation. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 15. Human-to-robot transfer
 
 Emiel · 60 seconds
 
-A pretrained human forecasting model teaches a robot policy through intermediate-feature distillation. The CALVIN ABC-to-D setting tests an unseen scene after robot-policy training on A/B/C. Average success rises from 65.9 to 67.5 percent, a 1.6 percentage point gain; average task-chain length rises from 3.29 to 3.38. Single-task success is lower than AR-VRM: 0.859 versus 0.901. This is not direct zero-shot control of a physical robot by human hand poses.
+The authors also test whether the learned representation helps a robot policy.
 
-Source: §4.4.5; Table 4
+They use the pretrained hand-forecasting model as a teacher and transfer information to the robot policy through intermediate features.
+
+The experiment uses CALVIN. The robot policy is trained on scenes A, B, and C, and evaluated on the unseen scene D.
+
+The average success rate increases from 65.9 to 67.5 percent. That's an improvement of 1.6 percentage points. The average number of tasks completed in a row also increases, from 3.29 to 3.38.
+
+The result is more mixed for individual tasks: single-task success is lower than AR-VRM. So this supports a modest transfer benefit, rather than a general improvement on every measure.
+
+Source: §4.4.5; Table 4. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 16. What the evidence supports
 
 Emiel · 75 seconds
 
-Strength: Exo is training-only, both module families have ablation support, and evaluation spans three benchmarks plus robot transfer. Limits: automatic labels and filtered easy-visible cases can bias the benchmark; reimplementations and no reported run variance limit comparison confidence; MPJPE is root-aligned so it does not establish global reaching accuracy; language necessity is not isolated; 802 GFLOPs baseline means low extra overhead does not establish real-time operation. State these as our analysis.
+For us, the main strength is that the model benefits from Exo supervision without requiring an Exo video during inference. The gains also appear on three benchmarks, and the ablations support the main components.
 
-Source: Our analysis based on §4, Tables 1–4 and Appendix B
+There are still several limitations.
+
+Automatic pose labels and confidence filtering can bias which examples are included. The paper also doesn't report variation across training runs.
+
+The model assumes that previous hand poses are available. We don't know how much the results would change if those poses came from a noisy estimator.
+
+Finally, root-aligned position error doesn't tell us whether the hand is reaching the correct absolute position. These are the main gaps we see between the reported benchmark results and a practical system.
+
+Source: Our analysis based on §4, Tables 1–4 and Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 17. The next experiments
 
 Emiel · 50 seconds
 
-Prioritize shuffled Exo pair and time-offset controls to isolate semantic matching from generic regularization. Replace ground-truth past poses with estimated/noisy inputs to measure deployment robustness. Compare correct, shuffled and omitted instructions to test language use. Run multiple seeds, subject/action-separated splits, and hand-audited labels. These are proposed follow-up studies, not experiments reported in the paper.
+We would start with three follow-up experiments.
 
-Source: Proposed experiments by the presenters
+First, compare correctly paired Exo videos with shuffled pairs and videos shifted in time. That would test whether the gain comes from the matching demonstration, rather than just an extra training objective.
+
+Second, use estimated past poses instead of clean pose inputs. We would also test missing hands and incorrect or missing instructions.
+
+Third, repeat the experiments with multiple seeds, action-separated splits, and a manually checked set of pose labels.
+
+These are experiments we would propose. They would help show how reliable the improvement is and which information the model actually uses.
+
+Source: Proposed experiments by the presenters. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 18. Takeaways and discussion
 
 Emiel · 40 seconds
 
-Three messages: forecast detailed future hands from multimodal Ego inputs, learn Exo features at two temporal resolutions during training, and use those predicted features to refine poses. Evidence supports within-benchmark gains; deployment and causal benefit of paired supervision need more testing. End the talk and invite the reviewing team. Let reviewers introduce their own two anchor questions and moderate the audience board.
+To conclude, there are three points we want to leave you with.
 
-Source: Summary of the paper and our assessment
+The task is to predict detailed future hand poses from first-person images, language, and previous poses.
+
+The main idea is to learn third-person context at two levels during training, and then use those predicted features to refine the hand poses.
+
+The results show consistent improvements within the evaluated benchmarks. For us, the next step is to test how much those gains depend on paired supervision and reliable pose inputs.
+
+Thank you for listening. We're ready for the discussion.
+
+Source: Summary of the paper and our assessment. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 19. Backup: full benchmark results
 
 Either · 0 seconds
 
-Table 1 in full, excluding random forecasting only. MPJPE / MPJVE reported in mm. Clarify that all methods were reimplemented with common backbones. AR-VRM additionally receives Exo data for analogical reasoning.
+This table contains the full position and motion errors for the comparison methods. Each cell shows MPJPE followed by MPJVE, and lower is better for both.
 
-Source: Table 1; §4.2; Appendix A.6
+The authors reimplement the methods for this forecasting task with common backbones. They also extend AR-VRM with Exo data for analogical reasoning.
+
+Exo2EgoPose has the lowest reported error for both metrics on all three benchmarks. The size of the improvement varies, especially for motion error on Ego-Exo4D.
+
+Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 20. Backup: dataset construction
 
 Either · 0 seconds
 
-AssemblyHands keeps frames with valid root and more than 10 valid joints per hand. Ego-Exo4D uses undistorted frames, standardized joint indices and atomic-action windows from -0.5 to +1.0 seconds. For both datasets, half of original validation episodes become the processed test split. EgoMe-pose uses confidence and episode-validity filtering. No new manual annotation audit is reported.
+The datasets go through different processing steps before evaluation.
 
-Source: §4.1.1; Appendix B
+For AssemblyHands, the authors keep annotations with a valid root and more than ten valid joints per hand. They also transform the poses into Ego camera coordinates and connect them to action labels.
+
+For Ego-Exo4D, they undistort the images, standardize the joint indices, and match the pose sequences to atomic-action descriptions.
+
+For both datasets, half of the original validation episodes become the processed test set.
+
+EgoMe-pose uses automatic pose estimation followed by confidence and episode-validity filtering. That helps remove unreliable annotations, but it can also favor examples where the hands are easier to detect.
+
+Source: §4.1.1; Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 21. Backup: efficiency and deployment
 
 Either · 0 seconds
 
-Sum Table 3: baseline 802.100 G FLOPs plus 0.676 G from new components equals 802.776 G, roughly 0.084 percent overhead. Parameters: 236.678 plus 4.435 equals 241.113 million, about 1.87 percent overhead. The paper reports no measured FPS or target-device latency. Past hand states must come from some estimator in deployment, which is not evaluated here.
+The full model uses about 802.8 billion floating-point operations for inference. Most of that comes from the baseline architecture.
 
-Source: Table 3; calculated sums and percentages
+The proposed modules add about 0.084 percent to the reported compute and about 1.87 percent to the parameter count.
+
+So the extra modules are relatively small. However, the paper doesn't report measured inference speed or latency on a target device. We therefore can't conclude that the full system runs in real time.
+
+A practical system would also need to obtain the previous hand poses. The effect of using an imperfect pose estimator is another open question.
+
+Source: Table 3; calculated sums and percentages. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 22. Backup: likely questions
 
 Either · 0 seconds
 
-Q: Is future information leaked? A: Future Exo supplies training targets only; test inference uses past Ego inputs. Q: Why not predict Exo pixels? A: Feature reconstruction transfers context with a smaller target, but can inherit encoder bias. Q: Is language useful? A: The task is conditioned on language, but a dedicated language ablation is missing. Q: Does it solve robotics? A: CALVIN feature distillation shows a modest transfer improvement, not end-to-end dexterous real-world deployment.
+Future Exo information is used as a training target. It is not an input during inference, so the model doesn't need access to future video when it makes a prediction.
 
-Source: §3–4; our assessment
+The reason for reconstructing Exo features is to learn useful context without generating all the video pixels. A limitation is that the target features can inherit biases from the visual encoder.
+
+Language is part of the model's input, but the paper doesn't isolate its contribution with a dedicated ablation. We therefore don't know how much the model depends on the instruction.
+
+For robotics, the result comes from feature distillation on CALVIN. It doesn't demonstrate direct real-world robot control from the predicted human hand poses.
+
+Source: §3–4; our assessment. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 23. Backup: original method diagram
 
 Either · 0 seconds
 
-Original architecture from Figure 2. Use this slide to answer questions about separate query types, the frozen Exo MAE targets, causal tokenization, the pose-query path into GLMM, and auxiliary Ego-image reconstruction. The two discussion prompts are retained in the separate speaking notes.
+This is the original architecture diagram from the paper.
 
-Source: Fig.2; §3
+The inputs are encoded at the top left and passed into the causal transformer. The different queries produce future pose features, global and local Exo features, and an auxiliary Ego-image reconstruction.
+
+At the bottom, the paired Exo video goes through a frozen MAE encoder to provide the training targets. At the top right, the predicted Exo representations guide the pose queries through global and local modulation.
+
+The actual Exo video is used for supervision during training. The model predicts the Exo representations from the available first-person inputs during inference.
+
+Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 24. References and figure credits
 
 Either · 0 seconds
 
-Primary source is the supplied 15-page Exo2EgoPose paper, arXiv:2607.15890v2, 5 August 2026. Venue is ACM MM 2026 as shown in the paper and seminar document. Figures 1, 2 and 4 reproduced or cropped under the paper’s CC BY 4.0 license, credited to Shi et al. Related-work descriptions come from the paper’s related work and Appendix A. Seminar requirements from HCVISION Research Seminar, updated 23 October 2026.
+Our main source is the Exo2EgoPose paper by Shi and colleagues, presented at ACM Multimedia 2026. The paper and code links are shown here.
 
-Source: Primary sources and attribution
+The research figures are reproduced or cropped from the paper and credited to the authors under the Creative Commons Attribution license.
+
+The related-work descriptions and experimental results also come from that paper. Our critical assessment and proposed follow-up experiments are our own analysis.
+
+Source: Primary sources and attribution. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+

@@ -1,0 +1,5 @@
+flowchart TB
+ I["Past Ego RGB + language<br/>+ past hand poses"] --> T["Forecaster"] --> O["Future poses"]
+ X["Paired Exo video"] -. "feature targets" .-> T
+ classDef base fill:#EDF2F5,stroke:#CCD6DC,color:#192D37
+ class I,T,O,X base

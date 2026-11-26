@@ -1,0 +1,14 @@
+flowchart LR
+ RGB["Ego RGB"] --> V["MAE + DINOv2"]
+ TXT["Instruction"] --> C["CLIP text encoder"]
+ POSE["Past poses"] --> H["HandFormer"]
+ V --> F["Multimodal tokens<br/>+ time embeddings"]
+ C --> F
+ H --> F
+ F --> T["Causal transformer<br/>12 layers, hidden size 384"]
+ classDef input fill:#FCFCFA,stroke:#CCD6DC,color:#192D37
+ classDef model fill:#EDF2F5,stroke:#EDF2F5,color:#192D37
+ classDef fusion fill:#203C4A,stroke:#203C4A,color:#FFFFFF
+ class RGB,TXT,POSE input
+ class V,C,H model
+ class F,T fusion
