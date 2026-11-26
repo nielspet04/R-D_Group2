@@ -1,10 +1,10 @@
 # Exo2EgoPose speaking script
 
-Niels: slides 1–8. Emiel: slides 9–18. Slides 19–24 are backups. Timing labels are rehearsal targets. All slides appear fully at once.
+Niels: slides 1–8. Emiel: slides 9–20. Slides 21–26 are backups. Rehearsal target: 19 minutes 30 seconds. All slides appear fully at once.
 
 ## 1. Exo2EgoPose
 
-Niels · 35 seconds
+Niels · 30 seconds
 
 Hi everyone. I'm Niels, and together with Emiel, I'll present Exo2EgoPose, a paper by Shi and colleagues from ACM Multimedia 2026.
 
@@ -16,7 +16,7 @@ Source: p.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 2. What the Ego camera misses
 
-Niels · 55 seconds
+Niels · 50 seconds
 
 The problem starts with the first-person camera. It moves with the person's head, and it only sees part of the scene. A hand or an object can disappear from the image, even though the action is still happening.
 
@@ -52,7 +52,7 @@ Source: §3.1, §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 4. Where the paper fits
 
-Niels · 65 seconds
+Niels · 50 seconds
 
 There are a few research directions that lead to this paper.
 
@@ -68,7 +68,7 @@ Source: §2; Appendix A. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 5. The model: two feature paths, one pose forecast
 
-Niels · 70 seconds
+Niels · 65 seconds
 
 We can now open the forecasting model from slide three and follow the information through it.
 
@@ -86,7 +86,7 @@ Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Simplified overview. Figures
 
 ## 6. The shared backbone: encoders and transformer
 
-Niels · 60 seconds
+Niels · 65 seconds
 
 We're now looking at the highlighted backbone in the same model map.
 
@@ -140,7 +140,7 @@ Source: §3.1–3.4. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
 ## 9. GLMM: where the two feature paths meet
 
-Emiel · 85 seconds
+Emiel · 70 seconds
 
 We're now at the point where the two feature paths meet. GLMM stands for Global-to-Local Modulation Module.
 
@@ -156,9 +156,25 @@ The refined pose features then go to the final head, which predicts the future 3
 
 Source: Fig.3; §3.4, Eqs.16–22. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 10. The training objective
+## 10. GLMM: overall context, then frame details
 
-Emiel · 50 seconds
+Emiel
+
+The title gives the order: GLMM: overall context, then frame details. We follow the arrows from left to right.
+
+We start with Pose queries: these are the features to refine before predicting the future joints.
+
+The Predicted clip vector is a whole-movement summary. It feeds into 1. Global modulation, whose role is to Add overall context. The box lists Adaptive layer normalization + cross-attention. AdaLN adjusts the pose features using that context. Cross-attention lets the pose queries take in relevant information from the clip vector.
+
+Next, the Predicted frame sequence provides details over time. It feeds into 2. Local modulation, whose role is to Add frame-level detail. The box lists attention + gate + AdaLN. Attention connects each pose query to relevant frame features, even when their timing differs. The gate controls how much information is added. AdaLN adjusts the pose features using this local context.
+
+The formula below explains AdaLN: Normalize the features, then adjust their scale (γ) and shift (β). LN means layer normalization. Gamma controls the scale adjustment, beta controls the shift, and the circled dot means element-by-element multiplication. The context determines these adjustments.
+
+Finally, the box on the right says Predict 3D joints + joint validity with the pose and validity head: output the future joint positions and predict whether each joint is valid.
+
+## 11. The training objective
+
+Emiel
 
 The model is trained with several losses.
 
@@ -166,15 +182,15 @@ Smooth L1 measures the error in the predicted joint coordinates. Binary cross-en
 
 The global and local Exo features use mean squared error. There is also an auxiliary task that reconstructs the third future first-person image.
 
+All these losses are added into one total training loss, which the model tries to minimize.
+
 The pose loss has a weight of 3,000, while the other terms have different weights. These weights balance the different training objectives.
 
 Together, the losses train the model to predict the future poses and learn useful visual context.
 
-Source: Eqs.15,23; §4.1.3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+## 12. Evaluation across three benchmarks
 
-## 11. Evaluation across three benchmarks
-
-Emiel · 65 seconds
+Emiel
 
 The authors evaluate the method on three benchmarks.
 
@@ -184,31 +200,33 @@ Ego-Exo4D covers a wider range of skilled activities and includes both manual an
 
 EgoMe-pose is constructed for this paper. The authors estimate the hand poses automatically with InterHand and RootNet, and then filter the annotations.
 
-They report two metrics. MPJPE measures joint position error after root alignment. MPJVE measures the error in joint displacement between frames. Lower is better for both.
+They report two metrics. MPJPE measures joint position error after root alignment. MPJVE measures the error in joint displacement between frames, so the velocity error between both frames. Lower is better for both.
 
 The datasets have different frame rates and annotation procedures, so we compare methods within each dataset rather than comparing the absolute errors across datasets.
 
-Source: §4.1; Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+## 13. Does Exo2EgoPose improve pose forecasts?
 
-## 12. Position error falls on every benchmark
+Emiel · 95 seconds
 
-Emiel · 75 seconds
+The previous slide introduced the three benchmarks. Now we ask: Does Exo2EgoPose improve pose forecasts? This chart compares two methods on those test sets.
 
-Exo2EgoPose has the lowest position error on all three benchmarks.
+On the left is AR-VRM, the adapted comparison method. It uses analogical reasoning to combine Ego pose features with Exo features. AR-VRM was developed for learning from human motion for robot manipulation; the authors adapt it here for hand pose forecasting and add Exo features for cross-view reasoning.
 
-Compared with AR-VRM, the error on AssemblyHands goes from 33.39 to 25.83 millimeters. On Ego-Exo4D, it goes from 44.46 to 36.44. On EgoMe-pose, it goes from 56.06 to 49.44.
+On the right is Exo2EgoPose, the method presented here. DERM predicts Exo features; GLMM uses them to refine pose features. These are the two modules we just explained. Both methods use Exo information in this comparison; they incorporate it differently.
 
-That gives the reductions shown below: 22.6 percent, 18 percent, and 11.8 percent.
+We measure MPJPE: root-aligned joint position error, in millimeters. It measures the distance between predicted and reference joints after aligning the root joint. Lower is better. The light bars are AR-VRM, and the dark bars are Exo2EgoPose. Compare the two bars within each benchmark.
 
-There is one detail in the comparison: GR-1 is slightly better than AR-VRM on Ego-Exo4D. Against that strongest position-error baseline, the reduction is 17.7 percent.
+On AssemblyHands, error falls from 33.39 to 25.83 millimeters: a 22.6% reduction. On Ego-Exo4D, it falls from 44.46 to 36.44: an 18.0% reduction. On EgoMe-pose, it falls from 56.06 to 49.44: an 11.8% reduction.
 
-So the improvement is consistent, but its size differs across datasets. The paper doesn't report confidence intervals, so we can't judge the variation across training runs.
+The percentages below are the MPJPE reduction vs AR-VRM on each test set: the decrease in error divided by the AR-VRM error.
 
-Source: Table 1; percentages calculated from Table 1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+As the slide notes, this is the AR-VRM comparison. GR-1 is slightly better than AR-VRM on Ego-Exo4D, so AR-VRM is not the strongest position-error baseline on every dataset. Exo2EgoPose still has the lowest MPJPE in Table 1 on all three benchmarks.
 
-## 13. What the qualitative examples show
+Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose. Percentages calculated from Table 1.
 
-Emiel · 55 seconds
+## 14. What the qualitative examples show
+
+Emiel · 50 seconds
 
 These examples show what the predictions look like.
 
@@ -220,9 +238,9 @@ The authors project the 3D joints onto the images and scale and align them for v
 
 Source: Fig.4; §4.4.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 14. What each component adds
+## 15. What each component adds
 
-Emiel · 70 seconds
+Emiel · 60 seconds
 
 The ablation study tests what the different components contribute. These numbers are from the AssemblyHands validation set.
 
@@ -236,25 +254,41 @@ These results support both reconstruction and modulation. The overall difference
 
 Source: Table 2, AssemblyHands validation. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 15. Human-to-robot transfer
+## 16. Why evaluate human-to-robot transfer on CALVIN?
+
+Emiel · 45 seconds
+
+Lower hand-pose error tells us how well the model forecasts human movement. The authors also want to know whether its learned features are useful for robot control.
+
+They test this in CALVIN, a simulated robot benchmark with language instructions, such as opening a drawer or moving a block. The robot has to complete a sequence of five instructions.
+
+In this experiment, the robot policy trains on scenes A, B and C, and is tested on the unseen scene D.
+
+The human forecasting model acts as a teacher for a robot policy through feature distillation. This tests whether knowledge learned from human actions can help a robot perform manipulation tasks.
+
+Mees et al., CALVIN (2022) · Official repository and illustration (MIT)
+Sources: https://github.com/mees/calvin ; https://github.com/mees/calvin/blob/main/media/teaser.png ; Exo2EgoPose §4.4.5. CALVIN background from the benchmark authors; motivation and transfer procedure from Exo2EgoPose.
+
+## 17. CALVIN: a modest transfer improvement
+
+Emiel · 55 seconds
+
+The transfer improves the overall CALVIN result, but the gain is modest.
+
+The reported average success rate goes from 65.9 percent for AR-VRM to 67.5 percent for Exo2EgoPose. That's an increase of 1.6 percentage points.
+
+This average summarizes success at chain lengths one to five. It doesn't mean that 67.5 percent of complete five-task sequences succeed.
+
+The average number of consecutive tasks completed rises from 3.29 to 3.38, out of five.
+
+Single-task success actually falls, from 90.1 to 85.9 percent. So the result supports better task-chain performance overall, rather than an improvement on every measure. It is evidence of useful representation transfer in simulation.
+
+Shi et al., Exo2EgoPose · §4.4.5, Table 4 · ABC → D
+All numbers from Table 4. Teacher-to-student transfer uses a distillation loss on intermediate representations; it does not directly execute the predicted human joint coordinates as robot commands.
+
+## 18. What the evidence supports
 
 Emiel · 60 seconds
-
-The authors also test whether the learned representation helps a robot policy.
-
-They use the pretrained hand-forecasting model as a teacher and transfer information to the robot policy through intermediate features.
-
-The experiment uses CALVIN. The robot policy is trained on scenes A, B, and C, and evaluated on the unseen scene D.
-
-The average success rate increases from 65.9 to 67.5 percent. That's an improvement of 1.6 percentage points. The average number of tasks completed in a row also increases, from 3.29 to 3.38.
-
-The result is more mixed for individual tasks: single-task success is lower than AR-VRM. So this supports a modest transfer benefit, rather than a general improvement on every measure.
-
-Source: §4.4.5; Table 4. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
-
-## 16. What the evidence supports
-
-Emiel · 75 seconds
 
 For us, the main strength is that the model benefits from Exo supervision without requiring an Exo video during inference. The gains also appear on three benchmarks, and the ablations support the main components.
 
@@ -268,9 +302,9 @@ Finally, root-aligned position error doesn't tell us whether the hand is reachin
 
 Source: Our analysis based on §4, Tables 1–4 and Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 17. The next experiments
+## 19. The next experiments
 
-Emiel · 50 seconds
+Emiel · 45 seconds
 
 We would start with three follow-up experiments.
 
@@ -284,7 +318,7 @@ These are experiments we would propose. They would help show how reliable the im
 
 Source: Proposed experiments by the presenters. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 18. Takeaways and discussion
+## 20. Takeaways and discussion
 
 Emiel · 40 seconds
 
@@ -300,7 +334,7 @@ Thank you for listening. We're ready for the discussion.
 
 Source: Summary of the paper and our assessment. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 19. Backup: full benchmark results
+## 21. Backup: full benchmark results
 
 Either · 0 seconds
 
@@ -312,7 +346,7 @@ Exo2EgoPose has the lowest reported error for both metrics on all three benchmar
 
 Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 20. Backup: dataset construction
+## 22. Backup: dataset construction
 
 Either · 0 seconds
 
@@ -328,7 +362,7 @@ EgoMe-pose uses automatic pose estimation followed by confidence and episode-val
 
 Source: §4.1.1; Appendix B. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 21. Backup: efficiency and deployment
+## 23. Backup: efficiency and deployment
 
 Either · 0 seconds
 
@@ -342,7 +376,7 @@ A practical system would also need to obtain the previous hand poses. The effect
 
 Source: Table 3; calculated sums and percentages. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 22. Backup: likely questions
+## 24. Backup: likely questions
 
 Either · 0 seconds
 
@@ -356,7 +390,7 @@ For robotics, the result comes from feature distillation on CALVIN. It doesn't d
 
 Source: §3–4; our assessment. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 23. Backup: original method diagram
+## 25. Backup: original method diagram
 
 Either · 0 seconds
 
@@ -370,7 +404,7 @@ The actual Exo video is used for supervision during training. The model predicts
 
 Source: Fig.2; §3. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 24. References and figure credits
+## 26. References and figure credits
 
 Either · 0 seconds
 
@@ -381,4 +415,6 @@ The research figures are reproduced or cropped from the paper and credited to th
 The related-work descriptions and experimental results also come from that paper. Our critical assessment and proposed follow-up experiments are our own analysis.
 
 Source: Primary sources and attribution. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+
+CALVIN background and illustration: Mees et al. (2022), official MIT-licensed repository: https://github.com/mees/calvin .
 
