@@ -204,33 +204,37 @@ They report two metrics. MPJPE measures joint position error after root alignmen
 
 The datasets have different frame rates and annotation procedures, so we compare methods within each dataset rather than comparing the absolute errors across datasets.
 
-## 13. Does Exo2EgoPose improve pose forecasts?
+## 13. Exo2EgoPose has lower position error
 
-Emiel · 95 seconds
+Emiel · 85 seconds
 
-The previous slide introduced the three benchmarks. Now we ask: Does Exo2EgoPose improve pose forecasts? This chart compares two methods on those test sets.
+We now compare two methods on the three benchmarks from the previous slide.
 
-On the left is AR-VRM, the adapted comparison method. It uses analogical reasoning to combine Ego pose features with Exo features. AR-VRM was developed for learning from human motion for robot manipulation; the authors adapt it here for hand pose forecasting and add Exo features for cross-view reasoning.
+AR-VRM is the comparison method. It is adapted to combine Ego pose features and Exo features through analogical reasoning. It is an existing method that the authors adapt for this task.
 
-On the right is Exo2EgoPose, the method presented here. DERM predicts Exo features; GLMM uses them to refine pose features. These are the two modules we just explained. Both methods use Exo information in this comparison; they incorporate it differently.
+Exo2EgoPose is the method from this paper. DERM predicts Exo features. GLMM uses them to refine pose features. Both methods use Exo information in this comparison, but they incorporate it differently.
 
-We measure MPJPE: root-aligned joint position error, in millimeters. It measures the distance between predicted and reference joints after aligning the root joint. Lower is better. The light bars are AR-VRM, and the dark bars are Exo2EgoPose. Compare the two bars within each benchmark.
+We measure MPJPE: root-aligned joint position error. All values are in millimeters, and lower is better. This measures the average distance between predicted and reference joints after aligning the root joint.
 
-On AssemblyHands, error falls from 33.39 to 25.83 millimeters: a 22.6% reduction. On Ego-Exo4D, it falls from 44.46 to 36.44: an 18.0% reduction. On EgoMe-pose, it falls from 56.06 to 49.44: an 11.8% reduction.
+Read the table row by row. Each row is a benchmark. The middle column is AR-VRM, and the highlighted right column is Exo2EgoPose.
 
-The percentages below are the MPJPE reduction vs AR-VRM on each test set: the decrease in error divided by the AR-VRM error.
+On AssemblyHands, AR-VRM has an error of 33.39 millimeters and Exo2EgoPose has 25.83. On Ego-Exo4D, the values are 44.46 and 36.44. On EgoMe-pose, they are 56.06 and 49.44.
 
-As the slide notes, this is the AR-VRM comparison. GR-1 is slightly better than AR-VRM on Ego-Exo4D, so AR-VRM is not the strongest position-error baseline on every dataset. Exo2EgoPose still has the lowest MPJPE in Table 1 on all three benchmarks.
+Exo2EgoPose has lower error on all three test sets. Compare methods within each benchmark, because the datasets have different activities and annotation procedures.
 
-Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose. Percentages calculated from Table 1.
+This table compares two methods. Full results include GR-1 and other baselines. AR-VRM is not the strongest position-error baseline on every dataset: GR-1 is slightly better on Ego-Exo4D. Exo2EgoPose still has the lowest MPJPE in Table 1 on all three benchmarks.
+
+Source: Table 1; §4.2; Appendix A.6. Shi et al. (2026), Exo2EgoPose.
 
 ## 14. What the qualitative examples show
 
-Emiel · 50 seconds
+Emiel · 55 seconds
 
 These examples show what the predictions look like.
 
 On the left, the person is pulling up a zipper with the right hand. On the right, the person is picking up a watch with both hands.
+
+Click Zoom model comparison on Pulling a zipper. The close-up shows AR-VRM, Exo2EgoPose (Ours), and Ground truth (GT) at the same frame and zoom. Compare hand orientation and finger shape with GT. Replay zoom repeats the animation; Close or Escape returns to both examples.
 
 Compared with the other methods, Exo2EgoPose produces hand shapes that look closer to the ground truth in these selected examples. We can compare the orientation of the hand and the shape of the fingers during the action.
 
@@ -238,21 +242,25 @@ The authors project the 3D joints onto the images and scale and align them for v
 
 Source: Fig.4; §4.4.1. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
 
-## 15. What each component adds
+## 15. What do reconstruction and modulation add?
 
-Emiel · 60 seconds
+Emiel · 90 seconds
 
-The ablation study tests what the different components contribute. These numbers are from the AssemblyHands validation set.
+What do reconstruction and modulation add? We compare the same base model with different Exo modules. These are three versions of Exo2EgoPose.
 
-Without the proposed Exo modules, the position error is 39.70 millimeters. Adding the Exo reconstruction reduces it to 30.11.
+The results are from AssemblyHands validation. MPJPE means root-aligned position error, in millimeters. Lower is better. Read the table from top to bottom.
 
-With both reconstruction and GLMM, the error goes down to 25.37. So adding the designed modulation gives another improvement of 4.74 millimeters.
+First, No Exo modules. Predict poses from Ego inputs: past first-person images, the instruction, and past hand poses. There is no DERM reconstruction and no GLMM modulation. The error is 39.70 millimeters.
 
-The authors also replace the modulation modules with ordinary transformer layers. That version reaches 26.44 millimeters, which is slightly worse than the full model.
+Second, Reconstruction only. DERM learns clip-level and frame-level Exo features, using the paired third-person video as training targets. This helps the shared model learn movement context. There is no GLMM: no explicit Exo-guided pose modulation. The error is 30.11 millimeters.
 
-These results support both reconstruction and modulation. The overall difference between the baseline and the full model combines several changes, so we shouldn't attribute that entire gain to one component.
+Third, Full model. DERM + GLMM: use the predicted Exo features to refine pose features globally, then locally. DERM supplies the movement summary and frame details. GLMM uses them to adjust the pose features before the final prediction. The error is 25.37 millimeters.
 
-Source: Table 2, AssemblyHands validation. Shi et al. (2026), Exo2EgoPose. Figures CC BY 4.0.
+The bottom lines follow the same steps. Adding DERM: 9.59 millimeters less error, from 39.70 to 30.11. Adding GLMM: 4.74 millimeters less error, from 30.11 to 25.37.
+
+Learning Exo context helps; using it for pose modulation improves the result further.
+
+Source: Table 2, AssemblyHands validation, selected ablations. Shi et al. (2026), Exo2EgoPose.
 
 ## 16. Why evaluate human-to-robot transfer on CALVIN?
 
@@ -269,22 +277,21 @@ The human forecasting model acts as a teacher for a robot policy through feature
 Mees et al., CALVIN (2022) · Official repository and illustration (MIT)
 Sources: https://github.com/mees/calvin ; https://github.com/mees/calvin/blob/main/media/teaser.png ; Exo2EgoPose §4.4.5. CALVIN background from the benchmark authors; motivation and transfer procedure from Exo2EgoPose.
 
-## 17. CALVIN: a modest transfer improvement
+## 17. CALVIN: completing tasks in sequence
 
-Emiel · 55 seconds
+Niels · 45 seconds
 
-The transfer improves the overall CALVIN result, but the gain is modest.
+We can compare the robot results using one measure: how many tasks it completes in a row.
 
-The reported average success rate goes from 65.9 percent for AR-VRM to 67.5 percent for Exo2EgoPose. That's an increase of 1.6 percentage points.
+Each CALVIN test sequence contains five language instructions. We count how many the robot completes before its first failure.
 
-This average summarizes success at chain lengths one to five. It doesn't mean that 67.5 percent of complete five-task sequences succeed.
+With AR-VRM, the robot completes an average of 3.29 tasks out of five. With Exo2EgoPose, that increases to 3.38 tasks out of five.
 
-The average number of consecutive tasks completed rises from 3.29 to 3.38, out of five.
+So the gain is 0.09 tasks per sequence. It's a small improvement, but it suggests that the features learned from human hand forecasting can help the robot complete longer task sequences.
 
-Single-task success actually falls, from 90.1 to 85.9 percent. So the result supports better task-chain performance overall, rather than an improvement on every measure. It is evidence of useful representation transfer in simulation.
+The improvement is not uniform: first-task performance is lower. So we should describe this as a modest transfer benefit.
 
-Shi et al., Exo2EgoPose · §4.4.5, Table 4 · ABC → D
-All numbers from Table 4. Teacher-to-student transfer uses a distillation loss on intermediate representations; it does not directly execute the predicted human joint coordinates as robot commands.
+Source: Shi et al., Exo2EgoPose, §4.4.5, Table 4, Avg.L. (ABC → D). Values: AR-VRM 3.29, Exo2EgoPose 3.38. Difference calculated from the displayed values: 0.09 tasks. The paper also reports Avg.R. 65.9% and 67.5%; those percentages are omitted from this slide to keep one interpretable unit. First-task success is 0.901 versus 0.859.
 
 ## 18. What the evidence supports
 

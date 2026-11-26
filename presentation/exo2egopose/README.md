@@ -11,10 +11,10 @@ The toolbar appears at the top right when hovered.
 - **E / Edit:** edit text and table cells directly. Finish editing or pause briefly, then wait for **Saved**. Changes are written to `index.html` and survive a refresh.
 - **M / Mermaid:** on a diagram slide (3, 5, 6, 7, 8, 9), edit the actual Mermaid code and choose **Apply & save**. You can download its `.mmd` source. Diagram labels, nodes and connections remain editable.
 - **Layout & animation:** select an object by clicking it. Change its position, size, font size, entrance effect, duration and build order. Objects sharing a build step appear together. Choose **none** to keep an object visible throughout the slide. Enable **Drag objects** to move items. Choose **Present this slide** to preview the builds.
-- **Charts:** select the chart on slide 13 or 15, then choose **Edit values** in Layout & animation. Edit its categories, series names and numeric arrays.
+- **Results tables:** edit the values and explanations directly on slides 13 and 15 using **Edit**.
 - **Pictures:** select an image in Layout & animation, then use **Replace image**. The replacement is embedded in the saved configuration. Use images under 6 MB.
 - **Notes:** edit the current slide’s speaker notes, then choose **Apply & save**.
-- **HTML backup:** download a copy of the current editable HTML. Keep it with `theme.css`, `deck.js`, `assets/` and `vendor/`.
+- **HTML backup:** download a copy of the current editable HTML. Keep it with `theme.css`, `deck.js`, `zipper-zoom.css`, `zipper-zoom.js`, `assets/` and `vendor/`.
 
 Plain file opening works for viewing. Autosave requires the supplied local server. On a save conflict, download an HTML backup before refreshing. Previous saved HTML versions are kept in `.backups/`.
 
