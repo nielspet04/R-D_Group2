@@ -1,0 +1,42 @@
+%% Exo2EgoPose presentation diagrams, redrawn from Shi et al. (2026), CC BY 4.0
+%% Each section is an independently renderable Mermaid flowchart.
+
+%% 1. Architecture (slide 5)
+flowchart LR
+  I[Past Ego RGB + language + past poses] --> T[Encoders + causal transformer]
+  T --> E[Predicted global and local Exo features]
+  T --> P[Decoded pose queries]
+  E --> G[Global-to-local modulation]
+  P --> G
+  G --> H[Future 3D joints + validity]
+  X[Paired Exo video: training only] --> M[Frozen MAE feature targets]
+  M -. MSE supervision .-> E
+
+%% 2. DERM (slide 7)
+flowchart LR
+  X[Paired Exo clip: past plus future] --> M[Frozen MAE]
+  M --> A[Average CLS across aligned clip]
+  M --> F[Future-frame CLS sequence]
+  A --> V[Global target]
+  F --> L[Local target sequence]
+  Q[Ego-conditioned decoded queries] --> PV[Predicted global vector]
+  Q --> PF[Predicted local sequence]
+  V -. MSE .-> PV
+  L -. MSE .-> PF
+
+%% 3. Inference (slide 8)
+flowchart LR
+  I[Past Ego RGB + language + past poses] --> T[Causal transformer]
+  T --> E[Predicted Exo features]
+  T --> P[Pose queries]
+  E --> G[GLMM]
+  P --> G
+  G --> O[Ten future 3D poses + validity]
+
+%% 4. GLMM (slide 9)
+flowchart LR
+  P[Pose queries] --> G[Global AdaLN + cross-attention]
+  V[Predicted clip vector] --> G
+  G --> L[Local cross-attention + gate + AdaLN]
+  F[Predicted frame sequence] --> L
+  L --> H[Pose and validity head]

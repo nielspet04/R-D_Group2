@@ -1,0 +1,10 @@
+flowchart TB
+ subgraph TRAIN["Training"]
+ direction LR
+ I["Past Ego RGB<br/>Language<br/>Past poses"] --> T["Forecaster"] --> P["Future poses"]
+ X["Paired Exo video<br/>including future frames"] -. "feature supervision" .-> T
+ end
+ subgraph TEST["Inference"]
+ direction LR
+ J["Past Ego RGB<br/>Language<br/>Past poses"] --> U["Forecaster"] --> Q["Future poses"]
+ end

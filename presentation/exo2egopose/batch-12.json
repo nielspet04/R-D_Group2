@@ -1,0 +1,647 @@
+[
+  {
+    "index": 12,
+    "title": "What the qualitative examples show",
+    "speaker": "Emiel",
+    "seconds": 55,
+    "notes": "Ask the audience to look at right-hand orientation and the grasping shape relative to GT. These are selected examples from Figure 4. Predicted 3D joints were projected to 2D and linearly scaled and aligned with stride 2. They help show hand shape, but are not independent evidence of accurate absolute 3D placement or a failure-rate estimate.",
+    "source": "Fig.4; §4.4.1",
+    "el": [
+      {
+        "type": "text",
+        "v": "What the qualitative examples show",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "13",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Fig.4; §4.4.1",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "img",
+        "name": "zipper-results",
+        "x": 64,
+        "y": 211,
+        "w": 550,
+        "h": 350,
+        "fit": "contain"
+      },
+      {
+        "type": "img",
+        "name": "watch-results",
+        "x": 666,
+        "y": 211,
+        "w": 550,
+        "h": 350,
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "v": "Pulling a zipper",
+        "x": 64,
+        "y": 580,
+        "w": 550,
+        "h": 45,
+        "size": 33,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Picking up a watch",
+        "x": 666,
+        "y": 580,
+        "w": 550,
+        "h": 45,
+        "size": 33,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Projected 3D poses, scaled and aligned for visualization",
+        "x": 64,
+        "y": 635,
+        "w": 1130,
+        "h": 28,
+        "size": 21,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 13,
+    "title": "What each component adds",
+    "speaker": "Emiel",
+    "seconds": 70,
+    "notes": "Use validation values only. Full model 25.37. Keeping Exo reconstruction but removing both modulation modules gives 30.11. Removing all proposed modules gives 39.70. Replacing both modulation modules by vanilla transformer layers yields 26.44. Ablation supports the architecture, but the 39.70 to 25.37 difference bundles several changes. The prose mentions a 9.59 degradation relative to the 30.11 row; the full-versus-baseline difference is 14.33. Prefer explicit table comparisons.",
+    "source": "Table 2, AssemblyHands validation",
+    "el": [
+      {
+        "type": "text",
+        "v": "What each component adds",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "14",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Table 2, AssemblyHands validation",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "AssemblyHands validation · MPJPE (mm)",
+        "x": 64,
+        "y": 197,
+        "w": 1130,
+        "h": 40,
+        "size": 27,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "chart",
+        "x": 64,
+        "y": 268,
+        "w": 1152,
+        "h": 300,
+        "categories": [
+          "No Exo modules",
+          "Reconstruction only",
+          "Full model"
+        ],
+        "series": [
+          {
+            "name": "MPJPE",
+            "values": [
+              39.7,
+              30.11,
+              25.37
+            ],
+            "fill": "#2D5263"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "v": "−4.74 mm",
+        "x": 64,
+        "y": 596,
+        "w": 400,
+        "h": 58,
+        "size": 44,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Adding GLMM to Exo reconstruction",
+        "x": 473,
+        "y": 610,
+        "w": 740,
+        "h": 48,
+        "size": 29,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 14,
+    "title": "Human-to-robot transfer",
+    "speaker": "Emiel",
+    "seconds": 60,
+    "notes": "A pretrained human forecasting model teaches a robot policy through intermediate-feature distillation. The CALVIN ABC-to-D setting tests an unseen scene after robot-policy training on A/B/C. Average success rises from 65.9 to 67.5 percent, a 1.6 percentage point gain; average task-chain length rises from 3.29 to 3.38. Single-task success is lower than AR-VRM: 0.859 versus 0.901. This is not direct zero-shot control of a physical robot by human hand poses.",
+    "source": "§4.4.5; Table 4",
+    "el": [
+      {
+        "type": "text",
+        "v": "Human-to-robot transfer",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "15",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "§4.4.5; Table 4",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Human forecasting teacher → robot policy distillation",
+        "x": 64,
+        "y": 197,
+        "w": 1130,
+        "h": 55,
+        "size": 31,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "65.9%",
+        "x": 64,
+        "y": 324,
+        "w": 495,
+        "h": 110,
+        "size": 92,
+        "color": "#72787C",
+        "bold": true
+      },
+      {
+        "type": "arrow",
+        "x": 555,
+        "y": 363,
+        "w": 94,
+        "h": 22,
+        "color": "#2D5263"
+      },
+      {
+        "type": "text",
+        "v": "67.5%",
+        "x": 719,
+        "y": 324,
+        "w": 495,
+        "h": 110,
+        "size": 92,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "AR-VRM",
+        "x": 64,
+        "y": 459,
+        "w": 495,
+        "h": 48,
+        "size": 30,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Exo2EgoPose",
+        "x": 719,
+        "y": 459,
+        "w": 495,
+        "h": 48,
+        "size": 30,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "box",
+        "x": 64,
+        "y": 549,
+        "w": 1152,
+        "h": 1,
+        "color": "#D9DDDF"
+      },
+      {
+        "type": "text",
+        "v": "+1.6 percentage points",
+        "x": 64,
+        "y": 586,
+        "w": 730,
+        "h": 62,
+        "size": 43,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "CALVIN ABC → D\nAverage success rate",
+        "x": 864,
+        "y": 588,
+        "w": 350,
+        "h": 69,
+        "size": 24,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 15,
+    "title": "What the evidence supports",
+    "speaker": "Emiel",
+    "seconds": 75,
+    "notes": "Strength: Exo is training-only, both module families have ablation support, and evaluation spans three benchmarks plus robot transfer. Limits: automatic labels and filtered easy-visible cases can bias the benchmark; reimplementations and no reported run variance limit comparison confidence; MPJPE is root-aligned so it does not establish global reaching accuracy; language necessity is not isolated; 802 GFLOPs baseline means low extra overhead does not establish real-time operation. State these as our analysis.",
+    "source": "Our analysis based on §4, Tables 1–4 and Appendix B",
+    "el": [
+      {
+        "type": "text",
+        "v": "What the evidence supports",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "16",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Our analysis based on §4, Tables 1–4 and Appendix B",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Evidence",
+        "x": 64,
+        "y": 211,
+        "w": 510,
+        "h": 55,
+        "size": 42,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Open questions",
+        "x": 704,
+        "y": 211,
+        "w": 510,
+        "h": 55,
+        "size": 42,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Exo used only during training\n\nGains across three benchmarks\n\nAblations and robot transfer",
+        "x": 64,
+        "y": 306,
+        "w": 510,
+        "h": 290,
+        "size": 30,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Bias from automatic labels\n\nNo reported run variance\n\nDependence on past pose inputs\n\nGlobal placement after root alignment",
+        "x": 704,
+        "y": 306,
+        "w": 510,
+        "h": 327,
+        "size": 29,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 16,
+    "title": "The next experiments",
+    "speaker": "Emiel",
+    "seconds": 50,
+    "notes": "Prioritize shuffled Exo pair and time-offset controls to isolate semantic matching from generic regularization. Replace ground-truth past poses with estimated/noisy inputs to measure deployment robustness. Compare correct, shuffled and omitted instructions to test language use. Run multiple seeds, subject/action-separated splits, and hand-audited labels. These are proposed follow-up studies, not experiments reported in the paper.",
+    "source": "Proposed experiments by the presenters",
+    "el": [
+      {
+        "type": "text",
+        "v": "The next experiments",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "17",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Proposed experiments by the presenters",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Test whether pairing matters",
+        "x": 68,
+        "y": 204,
+        "w": 1120,
+        "h": 38,
+        "size": 29,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Correct Exo pairs vs shuffled pairs and temporal offsets",
+        "x": 68,
+        "y": 247,
+        "w": 1120,
+        "h": 70,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Test realistic inputs",
+        "x": 68,
+        "y": 343,
+        "w": 1120,
+        "h": 38,
+        "size": 29,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Estimated past poses, missing hands and perturbed instructions",
+        "x": 68,
+        "y": 386,
+        "w": 1120,
+        "h": 70,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Test robustness of the result",
+        "x": 68,
+        "y": 482,
+        "w": 1120,
+        "h": 38,
+        "size": 29,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Multiple seeds, action-separated splits and audited 3D labels",
+        "x": 68,
+        "y": 525,
+        "w": 1120,
+        "h": 70,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 17,
+    "title": "Takeaways and discussion",
+    "speaker": "Emiel",
+    "seconds": 40,
+    "notes": "Three messages: forecast detailed future hands from multimodal Ego inputs, learn Exo features at two temporal resolutions during training, and use those predicted features to refine poses. Evidence supports within-benchmark gains; deployment and causal benefit of paired supervision need more testing. End the talk and invite the reviewing team. Let reviewers introduce their own two anchor questions and moderate the audience board.",
+    "source": "Summary of the paper and our assessment",
+    "el": [
+      {
+        "type": "text",
+        "v": "Takeaways and discussion",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "18",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Summary of the paper and our assessment",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "01",
+        "x": 68,
+        "y": 216,
+        "w": 90,
+        "h": 62,
+        "size": 43,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Forecast detailed future hand poses",
+        "x": 190,
+        "y": 216,
+        "w": 1010,
+        "h": 70,
+        "size": 37,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "02",
+        "x": 68,
+        "y": 335,
+        "w": 90,
+        "h": 62,
+        "size": 43,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Learn Exo context at two temporal levels",
+        "x": 190,
+        "y": 335,
+        "w": 1010,
+        "h": 70,
+        "size": 37,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "03",
+        "x": 68,
+        "y": 454,
+        "w": 90,
+        "h": 62,
+        "size": 43,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Refine Ego pose features globally, then locally",
+        "x": 190,
+        "y": 454,
+        "w": 1010,
+        "h": 84,
+        "size": 37,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Discussion",
+        "x": 68,
+        "y": 597,
+        "w": 1100,
+        "h": 53,
+        "size": 39,
+        "color": "#2D5263",
+        "bold": true
+      }
+    ]
+  }
+]

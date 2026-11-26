@@ -1,0 +1,759 @@
+[
+  {
+    "index": 6,
+    "title": "DERM learns two Exo targets",
+    "speaker": "Niels",
+    "seconds": 85,
+    "notes": "Video-level target averages MAE CLS features across the aligned past-plus-future window. Frame-level targets are individual MAE CLS features for the future chunk. Decoded Ego-conditioned queries regress these targets with MSE. The global vector summarizes motion across the clip, while the frame sequence preserves local spatial detail. For asynchronous EgoMe videos, linear relative-time alignment is used. This alignment can be imperfect.",
+    "source": "§3.3, Eqs.10–15",
+    "el": [
+      {
+        "type": "text",
+        "v": "DERM learns two Exo targets",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "07",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "§3.3, Eqs.10–15",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "One clip, two levels of supervision",
+        "x": 64,
+        "y": 194,
+        "w": 1130,
+        "h": 50,
+        "size": 32,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "box",
+        "x": 64,
+        "y": 297,
+        "w": 275,
+        "h": 120,
+        "color": "#F0F2F2"
+      },
+      {
+        "type": "text",
+        "v": "Paired Exo clip",
+        "x": 82,
+        "y": 315,
+        "w": 239,
+        "h": 96,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "arrow",
+        "x": 359,
+        "y": 346,
+        "w": 45,
+        "h": 22,
+        "color": "#2D5263"
+      },
+      {
+        "type": "box",
+        "x": 424,
+        "y": 297,
+        "w": 245,
+        "h": 120,
+        "color": "#F0F2F2"
+      },
+      {
+        "type": "text",
+        "v": "Frozen MAE",
+        "x": 442,
+        "y": 315,
+        "w": 209,
+        "h": 96,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "arrow",
+        "x": 689,
+        "y": 346,
+        "w": 45,
+        "h": 22,
+        "color": "#2D5263"
+      },
+      {
+        "type": "text",
+        "v": "Global",
+        "x": 780,
+        "y": 250,
+        "w": 430,
+        "h": 44,
+        "size": 36,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Average features across the clip",
+        "x": 780,
+        "y": 309,
+        "w": 430,
+        "h": 62,
+        "size": 26,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Local",
+        "x": 780,
+        "y": 420,
+        "w": 430,
+        "h": 44,
+        "size": 36,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Keep the future-frame sequence",
+        "x": 780,
+        "y": 479,
+        "w": 430,
+        "h": 62,
+        "size": 26,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Ego-conditioned queries learn to predict both targets",
+        "x": 64,
+        "y": 600,
+        "w": 1130,
+        "h": 54,
+        "size": 34,
+        "color": "#2D5263",
+        "bold": true
+      }
+    ]
+  },
+  {
+    "index": 7,
+    "title": "Training and inference use different information",
+    "speaker": "Niels",
+    "seconds": 55,
+    "notes": "Explicitly answer the potential leakage question. Future Exo frames are privileged supervision during training; they are not passed to the deployed forecaster. Test inputs remain language, past Ego RGB and past hand states. This resembles learning with privileged information. The targets may nevertheless encourage reliance on temporal alignment or dataset regularities, motivating controls. Hand off: Emiel will explain how the predicted Exo features improve pose predictions.",
+    "source": "§3.1–3.4",
+    "el": [
+      {
+        "type": "text",
+        "v": "Training and inference use different information",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 44,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "08",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "§3.1–3.4",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Training",
+        "x": 64,
+        "y": 214,
+        "w": 520,
+        "h": 58,
+        "size": 44,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Inference",
+        "x": 704,
+        "y": 214,
+        "w": 510,
+        "h": 58,
+        "size": 44,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "box",
+        "x": 640,
+        "y": 214,
+        "w": 1,
+        "h": 375,
+        "color": "#D9DDDF"
+      },
+      {
+        "type": "text",
+        "v": "Past Ego RGB\nLanguage\nPast hand poses",
+        "x": 64,
+        "y": 313,
+        "w": 510,
+        "h": 160,
+        "size": 35,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Past Ego RGB\nLanguage\nPast hand poses",
+        "x": 704,
+        "y": 313,
+        "w": 510,
+        "h": 160,
+        "size": 35,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "+ paired Exo feature targets",
+        "x": 64,
+        "y": 525,
+        "w": 520,
+        "h": 59,
+        "size": 29,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Exo features predicted internally",
+        "x": 704,
+        "y": 525,
+        "w": 510,
+        "h": 80,
+        "size": 29,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Future Exo frames supervise training only",
+        "x": 64,
+        "y": 625,
+        "w": 1130,
+        "h": 37,
+        "size": 27,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "title": "GLMM refines poses globally, then locally",
+    "speaker": "Emiel",
+    "seconds": 85,
+    "notes": "Global modulation derives scale, shift and residual weights from one reconstructed clip vector, plus cross-attention. Local modulation cross-attends over predicted frame features, then uses a learned gate and adaptive normalization. Soft alignment accommodates imperfect temporal correspondence. The normalized pose features become (1+gamma) times LN(x) plus beta. Do not say that attention alone proves geometric understanding.",
+    "source": "Fig.3; §3.4, Eqs.16–22",
+    "el": [
+      {
+        "type": "text",
+        "v": "GLMM refines poses globally, then locally",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "09",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Fig.3; §3.4, Eqs.16–22",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Global",
+        "x": 64,
+        "y": 213,
+        "w": 510,
+        "h": 60,
+        "size": 46,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Local",
+        "x": 704,
+        "y": 213,
+        "w": 510,
+        "h": 60,
+        "size": 46,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Reconstructed clip vector",
+        "x": 64,
+        "y": 294,
+        "w": 510,
+        "h": 45,
+        "size": 29,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Reconstructed frame sequence",
+        "x": 704,
+        "y": 294,
+        "w": 510,
+        "h": 45,
+        "size": 29,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "box",
+        "x": 64,
+        "y": 381,
+        "w": 510,
+        "h": 115,
+        "color": "#F0F2F2"
+      },
+      {
+        "type": "text",
+        "v": "Adaptive normalization\n+ cross-attention",
+        "x": 82,
+        "y": 399,
+        "w": 474,
+        "h": 91,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "arrow",
+        "x": 603,
+        "y": 426,
+        "w": 66,
+        "h": 22,
+        "color": "#2D5263"
+      },
+      {
+        "type": "box",
+        "x": 704,
+        "y": 381,
+        "w": 510,
+        "h": 115,
+        "color": "#F0F2F2"
+      },
+      {
+        "type": "text",
+        "v": "Soft alignment\n+ gated refinement",
+        "x": 722,
+        "y": 399,
+        "w": 474,
+        "h": 91,
+        "size": 25,
+        "color": "#171B1E",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "AdaLN(x) = (1 + γ) ⊙ LN(x) + β",
+        "x": 64,
+        "y": 567,
+        "w": 1130,
+        "h": 63,
+        "size": 44,
+        "color": "#2D5263",
+        "bold": true
+      }
+    ]
+  },
+  {
+    "index": 9,
+    "title": "The training objective",
+    "speaker": "Emiel",
+    "seconds": 50,
+    "notes": "Pose coordinates use Smooth L1. Joint validity uses BCE for missing or irrelevant hands and joints. Exo targets use MSE, and an auxiliary MAE-style decoder reconstructs the third future Ego image. The pose loss weight is 3000. Raw loss scales therefore should not be compared without the weights. All image reconstruction branches serve training.",
+    "source": "Eqs.15,23; §4.1.3",
+    "el": [
+      {
+        "type": "text",
+        "v": "The training objective",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "10",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Eqs.15,23; §4.1.3",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "L = 3000 Lpose + Lvalid + LV + 0.1 LF + LE",
+        "x": 68,
+        "y": 213,
+        "w": 1140,
+        "h": 95,
+        "size": 42,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "table",
+        "rows": [
+          [
+            "Target",
+            "Loss",
+            "Role"
+          ],
+          [
+            "Future 3D joints",
+            "Smooth L1",
+            "Forecast pose coordinates"
+          ],
+          [
+            "Joint validity",
+            "Binary cross-entropy",
+            "Handle missing / inactive joints"
+          ],
+          [
+            "Global + local Exo features",
+            "Mean squared error",
+            "Transfer cross-view context"
+          ],
+          [
+            "Third future Ego image",
+            "Reconstruction loss",
+            "Auxiliary visual learning"
+          ]
+        ],
+        "x": 68,
+        "y": 338,
+        "w": 1140,
+        "h": 283,
+        "widths": [
+          400,
+          310,
+          430
+        ]
+      }
+    ]
+  },
+  {
+    "index": 10,
+    "title": "Evaluation across three benchmarks",
+    "speaker": "Emiel",
+    "seconds": 65,
+    "notes": "AssemblyHands is toy assembly with paired synchronized views. Ego-Exo4D is broader skilled activity with mixed manual and automatic pose annotations. EgoMe-pose is newly pseudo-labeled with InterHand and RootNet and filtered. Metrics: MPJPE is root-aligned joint position error in mm; MPJVE compares joint displacements and is reported in mm. Different fps and label protocols mean absolute errors are not directly comparable across datasets.",
+    "source": "§4.1; Appendix B",
+    "el": [
+      {
+        "type": "text",
+        "v": "Evaluation across three benchmarks",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "11",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "§4.1; Appendix B",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "table",
+        "rows": [
+          [
+            "Benchmark",
+            "Train / val / test episodes",
+            "Pose labels"
+          ],
+          [
+            "AssemblyHands",
+            "6,120 / 355 / 355",
+            "Existing 3D annotations"
+          ],
+          [
+            "Ego-Exo4D",
+            "10,869 / 1,540 / 1,540",
+            "Manual + automatic"
+          ],
+          [
+            "EgoMe-pose",
+            "6,067 / 1,344 / 2,648",
+            "Automatic + filtered"
+          ]
+        ],
+        "x": 68,
+        "y": 199,
+        "w": 1140,
+        "h": 262,
+        "widths": [
+          350,
+          430,
+          360
+        ]
+      },
+      {
+        "type": "text",
+        "v": "MPJPE: root-aligned position error",
+        "x": 68,
+        "y": 507,
+        "w": 1100,
+        "h": 48,
+        "size": 30,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "MPJVE: joint displacement error between frames",
+        "x": 68,
+        "y": 570,
+        "w": 1100,
+        "h": 48,
+        "size": 30,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "Lower is better · compare methods within each dataset",
+        "x": 68,
+        "y": 625,
+        "w": 1100,
+        "h": 32,
+        "size": 22,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  },
+  {
+    "index": 11,
+    "title": "Position error falls on every benchmark",
+    "speaker": "Emiel",
+    "seconds": 75,
+    "notes": "Read each within-dataset comparison. AR-VRM versus ours gives 33.39 to 25.83, 44.46 to 36.44, and 56.06 to 49.44 mm. Relative reductions are 22.6, 18.0 and 11.8 percent. GR-1 is slightly better than AR-VRM in Ego-Exo4D MPJPE at 44.29, so against the best baseline that reduction is 17.7 percent. These are test results, not the validation ablation numbers. No uncertainty intervals are reported.",
+    "source": "Table 1; percentages calculated from Table 1",
+    "el": [
+      {
+        "type": "text",
+        "v": "Position error falls on every benchmark",
+        "x": 64,
+        "y": 57,
+        "w": 1150,
+        "h": 110,
+        "size": 50,
+        "color": "#171B1E",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "12",
+        "x": 1168,
+        "y": 668,
+        "w": 65,
+        "h": 28,
+        "size": 18,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "text",
+        "v": "Table 1; percentages calculated from Table 1",
+        "x": 64,
+        "y": 670,
+        "w": 1060,
+        "h": 25,
+        "size": 15,
+        "color": "#72787C",
+        "bold": false
+      },
+      {
+        "type": "chart",
+        "x": 64,
+        "y": 205,
+        "w": 1152,
+        "h": 355,
+        "categories": [
+          "AssemblyHands",
+          "Ego-Exo4D",
+          "EgoMe-pose"
+        ],
+        "series": [
+          {
+            "name": "AR-VRM",
+            "values": [
+              33.39,
+              44.46,
+              56.06
+            ],
+            "fill": "#B7C3C9"
+          },
+          {
+            "name": "Exo2EgoPose",
+            "values": [
+              25.83,
+              36.44,
+              49.44
+            ],
+            "fill": "#2D5263"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "v": "22.6%",
+        "x": 94,
+        "y": 579,
+        "w": 320,
+        "h": 57,
+        "size": 43,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "18.0%",
+        "x": 494,
+        "y": 579,
+        "w": 320,
+        "h": 57,
+        "size": 43,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "11.8%",
+        "x": 894,
+        "y": 579,
+        "w": 320,
+        "h": 57,
+        "size": 43,
+        "color": "#2D5263",
+        "bold": true
+      },
+      {
+        "type": "text",
+        "v": "MPJPE reduction vs AR-VRM · test sets · errors in mm",
+        "x": 64,
+        "y": 639,
+        "w": 1140,
+        "h": 30,
+        "size": 21,
+        "color": "#72787C",
+        "bold": false
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+flowchart LR
+ P["Pose queries"] --> G["Global modulation<br/>AdaLN + cross-attention"]
+ V["Predicted<br/>clip vector"] --> G
+ G --> L["Local modulation<br/>alignment + gate + AdaLN"]
+ F["Predicted<br/>frame sequence"] --> L
+ L --> H["Pose + validity<br/>head"]

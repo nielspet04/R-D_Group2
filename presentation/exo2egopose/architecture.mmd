@@ -1,0 +1,8 @@
+flowchart LR
+ I["Ego inputs"] --> T["Causal<br/>transformer"]
+ T --> P["Pose queries"]
+ T --> E["Predicted<br/>Exo features"]
+ P --> G["GLMM"]
+ E --> G
+ G --> H["Future poses<br/>+ validity"]
+ X["Paired Exo video<br/>training only"] -. "feature targets" .-> E

@@ -1,0 +1,8 @@
+flowchart LR
+ X["Paired Exo clip"] --> M["Frozen MAE"]
+ M --> G["Clip average<br/>global target"]
+ M --> L["Future-frame sequence<br/>local target"]
+ Q["Ego-conditioned<br/>queries"] --> PG["Predicted<br/>global vector"]
+ Q --> PL["Predicted<br/>local sequence"]
+ G -. "MSE" .-> PG
+ L -. "MSE" .-> PL
