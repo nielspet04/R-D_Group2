@@ -279,7 +279,7 @@ Sources: https://github.com/mees/calvin ; https://github.com/mees/calvin/blob/ma
 
 ## 17. CALVIN: completing tasks in sequence
 
-Niels · 45 seconds
+Niels · 55 seconds
 
 We can compare the robot results using one measure: how many tasks it completes in a row.
 
