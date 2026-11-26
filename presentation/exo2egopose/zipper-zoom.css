@@ -1,0 +1,36 @@
+[data-object="s12-o3"] { position: absolute; }
+.zipper-zoom-trigger {
+  position: absolute; right: 10px; bottom: 10px;
+  padding: 9px 14px; border: 1px solid #2d5263; border-radius: 5px;
+  background: #fcfcfaf2; color: #2d5263; font: 600 18px Arial, sans-serif;
+  cursor: zoom-in;
+}
+.zipper-zoom-trigger:focus-visible,
+.zipper-zoom button:focus-visible { outline: 3px solid #2d5263; outline-offset: 3px; }
+.zipper-zoom {
+  position: absolute; left: 54px; top: 178px; width: 1172px; height: 476px;
+  padding: 22px; z-index: 30; background: #fcfcfa;
+  border: 1px solid #ccd4d8; border-radius: 8px;
+  box-shadow: 0 12px 40px #171b1e30; text-align: left;
+}
+.zipper-zoom[hidden] { display: none !important; }
+.zipper-zoom-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.zipper-zoom-header h3 { flex: 1; margin: 0; font: 650 27px/1.2 Arial, sans-serif; text-transform: none; color: #171b1e; }
+.zipper-zoom button { padding: 8px 12px; border: 1px solid #ccd4d8; border-radius: 4px; background: #fcfcfa; color: #2d5263; font: 18px Arial, sans-serif; cursor: pointer; }
+.zipper-zoom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.zipper-zoom figure { margin: 0; }
+.zipper-zoom-viewport { aspect-ratio: 4 / 3; overflow: hidden; background: #edf0f1; border: 1px solid #ccd4d8; }
+.reveal .zipper-zoom-viewport img { display: block; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0; object-fit: cover; transform-origin: 65% 65%; }
+.zipper-zoom figcaption { margin-top: 10px; font: 650 23px/1.2 Arial, sans-serif; color: #2d5263; }
+.zipper-zoom p { margin: 16px 0 0; font: 20px/1.25 Arial, sans-serif; color: #596d78; }
+.zipper-zoom.is-zoomed { animation: zipper-panel-in .45s ease-out both; transform-origin: 24% 50%; }
+.zipper-zoom.is-zoomed .zipper-zoom-viewport img { animation: zipper-hand-zoom 1.1s .25s ease-in-out both; }
+@keyframes zipper-panel-in { from { opacity: 0; transform: scale(.65); } to { opacity: 1; transform: scale(1); } }
+@keyframes zipper-hand-zoom { from { transform: scale(1); } to { transform: scale(1.5); } }
+.editing .zipper-zoom-trigger, .overview .zipper-zoom-trigger,
+.print-pdf .zipper-zoom, .print-pdf .zipper-zoom-trigger { display: none !important; }
+@media print { .zipper-zoom, .zipper-zoom-trigger { display: none !important; } }
+@media (prefers-reduced-motion: reduce) {
+  .zipper-zoom.is-zoomed { animation: none; }
+  .zipper-zoom.is-zoomed .zipper-zoom-viewport img { animation: none; transform: scale(1.5); }
+}
