@@ -159,8 +159,19 @@ the reported status counts and diagnose video errors. Quote credits are estimate
 record the actual settled charge separately. The new manifest is
 `/scratch/leuven/397/vsc39706/epic_sta/sta2_test_timelines_62771307/manifest.json`.
 The script locks this output directory and records source hashes for each job.
-Once completed, set `METADATA` to this manifest and rerun preflight with the other
-selected-model paths unchanged. The original development audit remains intact.
+VSC job `62942164` completed this audit with all 138 test videos marked `ok`.
+Rerun the CPU preflight using the completed test manifest:
+
+```bash
+bash scripts/preflight_sta2_codabench.sh
+```
+
+This runner sets every required path, uses the confirmed STA2 Python directly,
+and prints progress. No Conda activation or previous terminal exports are needed.
+It writes `results/sta2/codabench-first-62771307/preparation/preflight.json`.
+Require `preflight_passed: true` before fresh GPU inference. The original development
+audit remains intact. The runner's exports apply to its own process; the explicit
+environment setup above remains available for subsequent manual commands.
 
 ## 3. Reuse first; quote GPU inference only if needed
 

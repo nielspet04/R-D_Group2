@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path.cwd()))
+print("Starting CPU preflight: importing dependencies...", flush=True)
 import pandas as pd
 import yaml
 from src.sta2.artifacts import PRIMARY_SCORE, load_prediction_artifact, verify_fallbacks
@@ -39,9 +40,11 @@ try:
     missing = [str(path) for path in paths.values() if not path.exists()]
     if missing:
         raise FileNotFoundError("Missing inputs: " + ", ".join(missing))
+    print("Hashing the selected STA2 checkpoint...", flush=True)
     checkpoint_hash = sha256_file(paths["STA_CKPT"])
     if checkpoint_hash != EXPECTED_SHA:
         raise ValueError("Selected checkpoint SHA-256 differs from Emiel's verified checkpoint")
+    print("Loading checkpoint metadata and checking completed training history...", flush=True)
     checkpoint = load_evaluation_checkpoint(paths["STA_CKPT"])
     configuration = checkpoint["configuration"]
     if int(checkpoint["epoch"]) != 5 or not math.isclose(
@@ -59,6 +62,7 @@ try:
         raise ValueError("History does not agree with the selected best checkpoint")
     if configuration.get("final_training"):
         raise ValueError("This task selects the development checkpoint, not an all-label retrain")
+    print("Checking annotation and development split integrity...", flush=True)
     train = load_events(paths["ANNOTATIONS"], split="train",
                         train_split=paths["TRAIN_SPLIT"], validation_split=paths["VAL_SPLIT"])
     validation = load_events(paths["ANNOTATIONS"], split="validation",
@@ -67,6 +71,7 @@ try:
         raise ValueError("Unexpected development split counts")
     if sorted(validation.participant_id.unique().tolist()) != ["P08", "P20", "P21", "P28", "P29", "P37"]:
         raise ValueError("Unexpected held-out participants")
+    print("Verifying provenance: reading the full backbone file for SHA-256; this can take several minutes...", flush=True)
     verified = verify_evaluation_inputs(
         checkpoint, backbone_checkpoint=paths["BACKBONE"], annotations=paths["ANNOTATIONS"],
         train_split=paths["TRAIN_SPLIT"], validation_split=paths["VAL_SPLIT"], train_events=train,
@@ -91,6 +96,7 @@ try:
     print("PASS backbone, annotation, split hashes, action vocabulary, and backbone configuration")
     save()
 
+    print("Checking the course test table...", flush=True)
     course_value = os.environ.get("COURSE_TEST", "")
     if not course_value or not Path(course_value).is_file():
         raise FileNotFoundError("COURSE_TEST must identify the actual course-supplied EPIC_100_test.csv")
@@ -116,6 +122,7 @@ try:
         "valid_action_classes": len(pairs), "valid_action_vocabulary_sha256": action_vocabulary_sha256(pairs),
         "primary_action_score": PRIMARY_SCORE,
     }
+    print("Checking existing test predictions for matching identities...", flush=True)
     candidates = set(paths["STA_CKPT"].parent.parent.rglob("metrics.json"))
     for directory in Path("results/sta2").glob("competition-final-*"):
         candidates.update(directory.rglob("metrics.json"))
@@ -141,9 +148,10 @@ try:
     save()
 
     # Constructor checks audit coverage and media identity without decoding frames.
+    print("Checking test media identities, timing audit coverage, and timeline hashes...", flush=True)
     dataset = STAClipDataset(events, paths["RAW_DIR"], paths["METADATA"], split="test", training=False)
     counts = {"full": 0, "partial": 0, "no_context": 0, "video_error": 0}
-    for row in events.to_dict("records"):
+    for event_number, row in enumerate(events.to_dict("records"), start=1):
         cutoff = float(row["sta_observation_end_seconds"])
         vid = row["video_id"]
         if cutoff <= 0:
@@ -157,6 +165,8 @@ try:
                 counts[selection.status] += 1
             except UnavailableContextError:
                 counts["video_error"] += 1
+        if event_number % 1000 == 0 or event_number == len(events):
+            print(f"Checked legal observation timing: {event_number}/{len(events)} events", flush=True)
     report["predecode_context_counts"] = counts
     report["preflight_passed"] = True
     print("PASS timing audit, media identities, timeline hashes, and legal observation sampling:", counts)
