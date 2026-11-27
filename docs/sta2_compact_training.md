@@ -1,191 +1,272 @@
-# Independent STA2 experiment on Niels's VSC account
+# Niels: compact STA2 head on A100
 
-Emiel runs the default `configs/sta2/main.yaml`: four-block head, learning rate
-1e-4, weight decay 0.01, seed 42, observed-plus-future, and the original 26/6
-participant split. Niels runs `configs/sta2/compact.yaml`, changing only head
-depth from four to two. This is development training, not final full-data
-retraining. It does not need Emiel's checkpoint or access to his account.
+Run the two-block head on **two A100 GPUs** and select its best checkpoint by
+held-out validation **Action MT5R**. This is the compact development experiment
+in the [competition runbook](sta2_codabench_runbook.md), which is the source of
+truth for budget, comparison, model selection and submission. Target model
+selection: **3 December 2026**; team submission: **9 December**.
 
-## Hypothesis and comparison
+## Fixed experiment
 
-The supplied first five epochs show train loss decreasing from 11.837 to 6.085,
-while validation loss reaches its minimum at epoch 2 and then rises. This is
-consistent with possible overfitting, but validation loss also contains an
-auxiliary action loss and is not the selection metric. Best Action MT5R still
-improves at epoch 5, so these logs do not establish convergence or a cause.
+| Setting | Compact run |
+| --- | --- |
+| Configuration | `configs/sta2/compact.yaml` |
+| Head | Two blocks, approximately 69.9M trainable parameters |
+| Reference | Four blocks, approximately 136.4M trainable parameters |
+| Training / validation | 59,767 / 7,450 events; original 26/6 participant split |
+| Validation participants | P08, P20, P21, P28, P29, P37 |
+| Seed / learning rate / weight decay | 42 / 0.0001 / 0.01 |
+| Effective batch / microbatch per GPU | 16 / 1 (eight accumulation steps on two GPUs) |
+| Precision | BF16 |
+| Model input | Observed plus predicted future features (`observed_only: false`) |
+| Schedule | Original 20-epoch horizon, patience five |
+| Allocation | Two A100s, 16 CPUs, 128000 MiB, **40 hours** |
+| Output | `results/sta2/compact-a100-JOBID` |
 
-A two-block head tests whether less trainable capacity generalizes better to
-the held-out participants. It contains one self-attention block and the final
-cross-attention block, versus three self-attention blocks plus cross-attention
-in the default. At the checkpoint's 1664-dimensional embeddings and the real
-3,317 training action classes, trainable head parameters are 69,915,010 versus
-136,411,778. Backbone cost is unchanged; do not assume training time halves.
+The YAML differs from the reference only in head depth. The frozen backbone is
+unchanged, so halving head depth does not imply halving epoch time. All decoded
+frames must precede the one-second anticipation cutoff. Predicted future
+features come from that legal observation. Keep all 7,450 validation events,
+including unseen training action pairs and prior-fallback events.
 
-Keep all other hyperparameters and the complete validation set unchanged.
-The training split remains 59,767 actions from 26 participants. Validation is
-7,450 actions from P08, P20, P21, P28, P29 and P37. Both heads retain the
-97-verb, 300-noun and auxiliary action outputs. Compare each run's best full
-validation Action MT5R under the same 20-epoch cap/patience-five rule. Emiel's
-8.77% is his best so far, not necessarily his eventual best. There is no
-guarantee the compact variant wins. One seed is an initial comparison, not
-proof of a robust gain.
+## Conda path correction — 27 November 2026
 
-## Pull and launch on VSC
+Niels's login-node output confirmed that `$VSC_DATA/conda_envs/rd_sta2` does not
+exist. The existing environment is `$VSC_DATA/miniconda3/envs/rd_sta2`.
+Its interpreter successfully imported Torch, NumPy, pandas and YAML and reported
+PyTorch `2.5.1+cu118`, CUDA build `11.8`. The activation command using the old
+path failed; the subsequent Python command succeeded in the already-active
+environment. This verifies those imports, not the failed activation or GPU/DDP.
 
-The experiment is on branch `STA2_dev`. Use Git to transfer the configuration,
-launcher and this guide to your account's existing checkout:
+The compact A100 wrapper (also used by the timing job), preflight and competition
+runbook now use the confirmed path. The preflight runs dependency imports with
+that exact interpreter before quoting. Run on VSC after transferring the changes:
+
+```bash
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
+conda activate "$VSC_DATA/miniconda3/envs/rd_sta2" && \
+    python -c 'import sys, torch; print(sys.executable); print(torch.__version__, torch.version.cuda)'
+```
+
+The `&&` prevents a failed activation from being mistaken for a successful
+environment check. CUDA hardware/BF16 and distributed execution remain to be
+verified inside the A100 timing allocation. Other launchers have their own
+environment settings; this correction covers the compact A100 workflow.
+
+## Prepare on your VSC Bash login node
+
+Preserve any local VSC edits before updating. Do not reset or clean the checkout.
+These local changes must first be transferred to VSC through your normal Git
+or file-transfer workflow; pulling fetches only changes already on the remote.
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-git status --short
+git status --short --branch
 git switch STA2_dev
 git pull --ff-only origin STA2_dev
-mkdir -p logs
-bash -n slurm/sta2_compact_h100.slurm
-unset STA2_COMPACT_RESUME_RUN
-sbatch slurm/sta2_compact_h100.slurm
+
+# If already configured: exports only the endpoint and private key-file path.
+if [[ -f "$HOME/.config/rd-dashboard/env" ]]; then
+    source "$HOME/.config/rd-dashboard/env"
+fi
+bash scripts/prepare_sta2_compact_a100.sh
 ```
 
-Run the prerequisite checks below before submitting if the data, environment
-or checkpoint has not already been verified on your own account. Preserve
-local VSC changes if Git reports a conflict; do not reset or clean the checkout.
+The preflight checks your account's queue and recent accounting, lists existing
+compact best checkpoints, checks required files and dependency imports, validates Bash syntax and
+quotes 40 hours. It stops if your account already has a queued compact job or
+if a required input is missing. It does not submit, decode videos or validate
+the complete dataset. The trainer performs its full split/audit checks at start.
+Check the other account for an existing compact run as required by the runbook;
+your own queue alone cannot rule out a duplicate.
 
-## Alternative: create the experiment directly on VSC
+If upload variables are configured, the preflight probes the authenticated
+upload endpoint. This proves login-node connectivity only. See
+[hosted dashboard setup](hosted_dashboard_setup.md) for private credential setup
+and compute-node connectivity checks. Never put the key in Git or chat.
 
-The two new files already exist in the local checkout. The following commands
-also generate their exact contents from the default files on VSC, without an
-SSH alias, Git push or file transfer. Run on YOUR account's login shell.
-They preserve the original files and refuse to replace differing experiment
-files that already exist.
+Record actual spending plus quotes for pending work. The campaign cap is
+**3M credits**, including **1.1M for development training**. The runbook estimates
+roughly **778k credits** for this 40-hour request; the live quote decides whether
+it fits. Existing spending reduces the remaining allowance.
+
+## First run: one complete epoch for timing and cost
+
+Use `slurm/sta2_compact_a100_timing.slurm` before committing to 40 hours. It
+requests **12 hours on the regular `gpu_a100` partition**, two A100s, 16 CPUs
+and 128000 MiB. The existing `gpu_a100_debug` profiler has a 30-minute limit;
+it cannot establish the time for a full epoch. Twelve hours is a provisional
+ceiling, not a measured duration or a guarantee that the first epoch fits.
+
+The timing job uses the full training and validation splits and stops after
+saving epoch 1, `last.pt`, `best.pt` and history. `--stop-after-epoch 1` leaves
+the original 20-epoch scheduler unchanged, making the saved run resumable.
+Its stop request is recorded separately in the run manifest. Do not set
+`max_epochs: 1`, which would change the learning-rate schedule.
+
+After transferring these changes to VSC, run:
 
 ```bash
 cd "$VSC_DATA/R-D_Group2"
-python3 - <<'PY'
-from pathlib import Path
-
-def save_new(name, text):
-    path = Path(name)
-    if path.exists() and path.read_text() != text:
-        raise SystemExit(f"Existing experiment differs; preserve it before continuing: {name}")
-    path.write_text(text)
-
-config = Path("configs/sta2/main.yaml").read_text()
-assert config.count("  depth: 4") == 1, "Expected Emiel's default four-block config"
-save_new("configs/sta2/compact.yaml",
-    "# Independent development experiment: reduce only prediction-head depth.\n"
-    + config.replace("  depth: 4", "  depth: 2"))
-
-script = Path("slurm/sta2_full_h100.slurm").read_text()
-for old, new in (
-    ("sta2-full-h100", "sta2-compact-h100"),
-    ("configs/sta2/main.yaml", "configs/sta2/compact.yaml"),
-    ("STA2_RESUME_RUN", "STA2_COMPACT_RESUME_RUN"),
-    ("results/sta2/full-h100-", "results/sta2/compact-h100-"),
-    ("# Fixed production inputs: never inherit the smoke wrapper's configuration.",
-     "# Independent two-block-head experiment; retain the development split."),
-):
-    assert old in script, f"Unexpected baseline launcher; missing {old}"
-    script = script.replace(old, new)
-save_new("slurm/sta2_compact_h100.slurm", script)
-PY
+# Source the private dashboard env here if already configured.
+bash scripts/prepare_sta2_compact_a100.sh --timing
 ```
 
-This assumes your VSC checkout contains the existing working full-training
-launcher. It creates only a configuration and wrapper; no new trainer code or
-final-retraining changes are required for this experiment.
-
-## Check your account's prerequisites and launch
-
-Emiel's account having the data does not establish that your account has it.
-These are the existing Niels paths used by the new wrapper:
+Save the live quote. At the runbook's approximate rate, 12 hours is about
+233k credits for the allocation ceiling. Actual accounting and the live quote
+take precedence. The timing job consumes the development allowance; resuming
+its checkpoint avoids paying for epoch 1 twice. Check both accounts for a
+duplicate and check remaining credits before submitting:
 
 ```bash
-test -s "$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt"
-test -s "$VSC_SCRATCH/epic_sta/sta2_timelines_local/manifest.json"
-test -d "$VSC_SCRATCH/epic_sta/raw_fixed"
-test -d "$VSC_DATA/conda_envs/rd_sta2"
-test -s data/processed/EPIC_100_train_participant_split.csv
-test -s data/processed/EPIC_100_validation_participant_split.csv
 mkdir -p logs
-bash -n slurm/sta2_compact_h100.slurm
-unset STA2_COMPACT_RESUME_RUN
-sbatch slurm/sta2_compact_h100.slurm
+unset STA2_COMPACT_RESUME_RUN STA2_COMPACT_STOP_AFTER_EPOCH
+sbatch --export=ALL --time=12:00:00 slurm/sta2_compact_a100_timing.slurm
 ```
 
-Run the checks before sbatch and resolve any failure. The trainer independently
-checks exact source/split coverage, disjoint participants, current video audit
-identities and complete video availability. The wrapper requests two H100s,
-16 CPU cores, 128000 MiB memory and up to 72 hours under `lp_edu_rdlab`.
-It starts a fresh model head, with no resume or dependency on Emiel's job.
-
-## A100 alternative during H100 maintenance
-
-`slurm/sta2_compact_a100.slurm` runs the same compact-head experiment on two
-A100 GPUs. It changes the partition, matching cluster module, job/log names
-and new-run directory to A100; BF16 and all model/data/training settings stay
-the same. Its 16 CPUs and 128000 MiB memory for two GPUs are within the
-[documented A100 resource limits](https://docs.vscentrum.be/leuven/slurm_specifics.html).
-
-Check live availability; a different partition is not a guarantee of an
-earlier start:
+Record the returned ID and inspect the log:
 
 ```bash
-sinfo -M wice -p gpu_a100,gpu_h100,gpu_v100 -o "%P %a %l %D %t %G"
+TIMING_JOB=REPLACE_WITH_JOB_ID
+COMPACT_RUN="results/sta2/compact-a100-$TIMING_JOB"
+tail -f "logs/sta2-compact-a100-timing-$TIMING_JOB.out"
+# In another shell, or after leaving tail with Ctrl-C:
+sacct -M wice -j "$TIMING_JOB" -X \
+    --format=JobID,State,ElapsedRaw,Timelimit,AllocTRES,ExitCode
 ```
 
-After pulling the new launcher, use
-`sbatch slurm/sta2_compact_a100.slurm`. If switching away from an H100 job,
-cancel only the pending H100 job after successful replacement submission:
-`scancel --state=PENDING OLD_H100_JOBID`. Do not leave two equivalent training
-jobs queued unintentionally. A100 logs are
-`logs/sta2-compact-a100-JOBID.out`, with outputs under
-`results/sta2/compact-a100-JOBID`.
+The log includes batch start (host, partition and UTC time), setup/manifest,
+training progress at the first optimizer update and every 100 updates,
+validation progress every 1,000 rank-zero batches with elapsed seconds,
+`epoch_complete`, `requested_epoch_boundary` and batch exit code/time.
+Output is unbuffered through Python and `srun`. Environment/setup failures
+now print source/line and batch-exit diagnostics too. Python/DDP tracebacks
+remain in the same Slurm output file. A missing log can mean the job is still
+pending or Slurm could not open the output path; create `logs` before `sbatch`.
+The timing job's log prefix differs from the standard launcher's prefix.
 
-Keep `STA2_COMPACT_RESUME_RUN` unset for a fresh run. If resuming, use the A100
-launcher only with an existing A100 run; the resolved configuration includes
-output/input paths, and cross-launcher resume has not been validated.
-
-V100 is listed among the [wICE GPU partitions](https://docs.vscentrum.be/leuven/wice_quick_start.html)
-but does not provide native BF16. The current trainer supports BF16 or FP32,
-not an FP16/GradScaler path. A V100 attempt therefore needs an explicitly
-configured FP32 run and memory/throughput profiling before committing to full
-training. No V100 performance or fit claim has been established.
-
-## Monitor and resume
-
-For the original H100 launcher, replace JOBID with your new job ID:
+Once epoch 1 completes, save a cost report using the **total credits quoted for
+the 12-hour request**, replacing both placeholders below. For `ElapsedRaw`, use
+the completed top-level job row, not a `.batch` or `.extern` step:
 
 ```bash
-squeue -u "$USER"
-tail -f logs/sta2-compact-h100-JOBID.out
+python scripts/summarize_sta2_timing.py \
+    --run-dir "$COMPACT_RUN" \
+    --quoted-credits REPLACE_WITH_TOTAL_QUOTE --quoted-hours 12 \
+    --allocation-seconds REPLACE_WITH_ELAPSED_RAW
 ```
 
-Outputs are `results/sta2/compact-h100-JOBID`. The run manifest must show
-`head.depth: 2`, `train_events: 59767`, `validation_events: 7450`,
-the expected participant IDs and `observed_only: false`. Check best/last
-checkpoints and `history.json` in this new directory.
+The report is saved as `$COMPACT_RUN/timing-report.json`. It records measured
+train, validation, checkpoint and total epoch seconds, quote-derived credits
+per epoch and estimated allocation credits. The allocation includes model
+loading, audits, shutdown and other overhead. Add `--actual-credits NUMBER`
+when VSC reports the real charge; estimates are never labelled actual cost.
+If you changed the requested walltime, pass its hours and matching quote.
+First-epoch caches/warmup may differ from later epochs. No completed history
+means no measured full-epoch estimate: diagnose the log and accounting first.
 
-If the allocation stops at an epoch boundary before development finishes:
+After checking metrics, legal-input/fallback counts and the remaining budget,
+continue this same run with the normal A100 wrapper and no stop flag:
 
 ```bash
-export STA2_COMPACT_RESUME_RUN="results/sta2/compact-h100-JOBID"
-sbatch slurm/sta2_compact_h100.slurm
+export STA2_COMPACT_RESUME_RUN="$COMPACT_RUN"
+unset STA2_COMPACT_STOP_AFTER_EPOCH
+test -s "$COMPACT_RUN/checkpoints/last.pt"
+# Choose a walltime that fits the measured epoch time plus headroom and budget.
+sam-quote sbatch --time=12:00:00 slurm/sta2_compact_a100.slurm
+# Submit only after checking that quote:
+sbatch --export=ALL --time=12:00:00 slurm/sta2_compact_a100.slurm
 unset STA2_COMPACT_RESUME_RUN
 ```
 
-Compare the new best Action MT5R against Emiel's eventual best and check that
-both run manifests have identical split hashes and backbone checkpoint SHA256.
-Different account paths are fine. If this run wins, select it for later
-full-data retraining and Codabench export. Do not use the full-data final job
-to evaluate whether this architecture improves held-out validation.
+Epoch 2 continues the same schedule and output directory. Do not start a fresh
+40-hour job if you intend to continue the measured checkpoint. The commands
+in the next section are for an intentionally fresh run.
 
-## Local verification
+## Submit once the checks and quote pass
 
-The candidate YAML differs from the baseline only in head depth. The real
-training annotations supplied the event, participant and action-class counts.
-Meta-device construction verified full-size head parameter counts. A small
-CPU model using the candidate's head settings passed finite forward/backward,
-one AdamW update and evaluation with 97/300 outputs and activation
-checkpointing enabled. Bash syntax and Git whitespace checks passed.
-These checks do not establish VSC resource availability, full-size GPU
-throughput or an accuracy improvement. No remote job has been launched here.
+```bash
+mkdir -p logs
+unset STA2_COMPACT_RESUME_RUN
+sbatch --export=ALL --time=40:00:00 slurm/sta2_compact_a100.slurm
+```
+
+The wrapper now defaults to 40 hours too. The explicit override keeps the
+allocation clear. Direct `sbatch` uses the trainer's integrated monitoring;
+`scripts/submit_monitored.py` currently has no compact A100 job type.
+Do not use its full-H100 job type for this experiment.
+
+Set the real job ID returned by `sbatch`:
+
+```bash
+COMPACT_JOB=REPLACE_WITH_JOB_ID
+COMPACT_RUN="results/sta2/compact-a100-$COMPACT_JOB"
+squeue -M wice -j "$COMPACT_JOB" --start
+sacct -M wice -j "$COMPACT_JOB" -X \
+    --format=JobID,State,Elapsed,Timelimit,AllocTRES,ExitCode
+tail -f "logs/sta2-compact-a100-$COMPACT_JOB.out"
+```
+
+After the first saved epoch, inspect `run-manifest-*.json`, `history.json`,
+`checkpoints/best.pt` and `checkpoints/last.pt` in `$COMPACT_RUN`. Confirm the
+settings above, split hashes and backbone SHA-256 against the reference.
+Measure `train_seconds + validation_seconds` plus checkpoint overhead to
+estimate credits per epoch. Aim for at least three completed epochs if feasible;
+use Action MT5R and usable/fallback counts to decide whether more training is
+worth the cost. Diagnose decode errors before using the run for selection.
+
+The [hosted dashboard](https://training-observatory.pages.dev/) requires sign-in
+and may lag. Native history and Slurm accounting determine actual state.
+Closing the laptop does not stop a submitted batch job.
+
+## Resume only after checking the saved result
+
+For a walltime-limited A100 run with `history.json` and `checkpoints/last.pt`,
+quote a continuation only if another epoch fits its time and credit allowance:
+
+```bash
+export STA2_COMPACT_RESUME_RUN="$COMPACT_RUN"
+test -s "$STA2_COMPACT_RESUME_RUN/history.json"
+test -s "$STA2_COMPACT_RESUME_RUN/checkpoints/last.pt"
+sam-quote sbatch --time=12:00:00 slurm/sta2_compact_a100.slurm
+# Submit after checking the quote, remaining credits and expected finish:
+sbatch --export=ALL --time=12:00:00 slurm/sta2_compact_a100.slurm
+unset STA2_COMPACT_RESUME_RUN
+```
+
+Keep the same wrapper, world size, inputs and settings. Checkpoints save at
+epoch boundaries; an interrupted incomplete epoch can be lost. Do not switch
+an H100 run into this A100 wrapper without validating cross-launcher resume.
+
+## Handoff for comparison
+
+Give Emiel the job ID, Git revision, stable best checkpoint path, best epoch,
+Action/Verb/Noun MT5R, split/backbone identities, fallback counts, measured epoch
+time and actual credits. The recorded reference is run `62771307`, **8.77% Action
+MT5R at epoch 5**; verify its native history/checkpoint before comparison.
+Follow runbook section 4 to compare both models and the fixed 50/50 blend on
+the same complete validation split. Full-data retraining follows model selection.
+
+## Verification record — 27 November 2026
+
+Passed locally: Python syntax, Bash syntax, Git whitespace, quote-derived cost
+arithmetic and invalid-quote rejection; the real `fit` control flow with stubbed
+model math/storage (stop at epoch 1, preserve the 20-epoch horizon, resume epoch
+2); wrapper arguments and accidental-resume rejection; environment-failure
+logging with preserved nonzero status. These checks use no GPU or live scheduler.
+
+A regression test for the real model's epoch-stop/resume behavior was added to
+`tests/test_sta2/test_sta2_training.py`. It could not run locally because the
+available Python environments lack NumPy/PyTorch. Before submitting, run it in
+the existing VSC training environment:
+
+```bash
+source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
+conda activate "$VSC_DATA/miniconda3/envs/rd_sta2"
+python -m unittest discover -s tests/test_sta2 -p test_sta2_training.py
+```
+
+The shared training launcher's log changes also affect other STA2 wrappers.
+No live GPU/DDP execution, queue availability, data validity, credit balance,
+throughput or accuracy has been verified here. No timing result or actual charge
+exists yet. A real job is launched only by the explicit `sbatch` command on VSC.

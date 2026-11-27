@@ -309,6 +309,35 @@ class STA2TrainingTests(unittest.TestCase):
             self.assertEqual(resumed["completed_epoch"], 2)
             self.assertEqual(len(resumed["history"]), 2)
 
+    def test_requested_epoch_stop_preserves_schedule_and_can_resume(self):
+        model = self.make_model()
+        optimizer, scheduler = self.make_optimizer_scheduler(model)
+        batches = TinyLoader(make_batch(i, verb=i, noun=i) for i in range(6))
+        with tempfile.TemporaryDirectory() as directory:
+            arguments = dict(
+                model=model, train_loader=batches, validation_loader=batches,
+                train_sampler=Mock(), validation_sampler=Mock(), train_dataset=Mock(),
+                action_vocabulary=self.vocabulary,
+                evaluation_action_pairs=build_action_pairs(np.arange(6), np.arange(6)),
+                verb_prior=torch.full((6,), 1 / 6), noun_prior=torch.full((6,), 1 / 6),
+                optimizer=optimizer, scheduler=scheduler, config=self.config,
+                context=self.context, output_dir=Path(directory),
+                resolved_config={"world_size": 1}, backbone_provenance={},
+                split_hashes={}, repository_root=PROJECT_ROOT,
+            )
+            original_schedule = scheduler.state_dict().copy()
+            stopped = fit(**arguments, stop_after_epoch=1)
+            self.assertEqual(stopped["completed_epoch"], 1)
+            row = stopped["history"][0]
+            self.assertGreater(row["epoch_seconds"], 0)
+            self.assertGreaterEqual(row["checkpoint_seconds"], 0)
+            self.assertGreaterEqual(row["epoch_seconds"], row["train_seconds"] + row["validation_seconds"])
+            self.assertEqual(self.config.max_epochs, 2)
+            self.assertEqual(scheduler.state_dict()["base_lrs"], original_schedule["base_lrs"])
+            resumed = fit(**arguments, resume=Path(directory) / "checkpoints/last.pt")
+            self.assertEqual(resumed["completed_epoch"], 2)
+            self.assertEqual(len(resumed["history"]), 2)
+
     def test_fit_writes_history_and_resumes_completed_run(self):
         model = self.make_model()
         optimizer, scheduler = self.make_optimizer_scheduler(model)

@@ -575,11 +575,15 @@ def validate_one_epoch(
 
     model.eval()
     records: list[dict[str, Any]] = []
+    validation_started = time.monotonic()
 
     with torch.inference_mode():
         for batch_index, cpu_batch in enumerate(loader):
             if context.is_main and batch_index % 1000 == 0:
-                print(json.dumps({"event": "validation_progress", "rank0_batches": batch_index}), flush=True)
+                print(json.dumps({
+                    "event": "validation_progress", "rank0_batches": batch_index,
+                    "elapsed_seconds": time.monotonic() - validation_started,
+                }), flush=True)
             batch = _move_batch(cpu_batch, context.device)
             action_labels = encode_action_labels(
                 batch["verb_label"],
@@ -1003,6 +1007,7 @@ def fit(
     repository_root: Path,
     resume: Path | None = None,
     final_epochs: int | None = None,
+    stop_after_epoch: int | None = None,
 ) -> dict[str, Any]:
     """Train, validate, early-stop, checkpoint, and resume at epochs."""
 
@@ -1012,6 +1017,10 @@ def fit(
     start_epoch = 1
     optimizer_step = 0
     final_training = final_epochs is not None
+    if stop_after_epoch is not None and (
+        final_training or not 1 <= stop_after_epoch <= config.max_epochs
+    ):
+        raise ValueError("stop_after_epoch requires development training and an epoch within max_epochs")
     if final_training and not 1 <= final_epochs <= config.max_epochs:
         raise ValueError("final epochs must be between 1 and max_epochs")
     if final_training and len(validation_loader.dataset):
@@ -1080,7 +1089,7 @@ def fit(
         monitor.confirm_resume(start_epoch-1, resolved_config)
     completed_epoch = start_epoch - 1
     completion_reason = "final_epochs" if final_training else "max_epochs"
-    for epoch in range(start_epoch, (final_epochs or config.max_epochs) + 1):
+    for epoch in range(start_epoch, (stop_after_epoch or final_epochs or config.max_epochs) + 1):
         if not final_training and epochs_without_improvement >= config.early_stopping_patience:
             break
         if context.is_main:
@@ -1153,6 +1162,7 @@ def fit(
 
         if context.is_main:
             monitor.update(phase="checkpointing")
+            checkpoint_started = time.monotonic()
             save_arguments = {
                 "model": model,
                 "optimizer": optimizer,
@@ -1181,6 +1191,8 @@ def fit(
                     **save_arguments,
                 )
 
+            epoch_record["checkpoint_seconds"] = time.monotonic() - checkpoint_started
+            epoch_record["epoch_seconds"] = time.monotonic() - epoch_started
             write_json_atomic(history_path, history)
             monitor.epoch(epoch_record, configuration=resolved_config, resumed_from_epoch=start_epoch-1 if resume else None)
             monitor.update(completed_epoch=epoch, best_action_mt5r=best_metric)
@@ -1188,6 +1200,12 @@ def fit(
 
         if dist.is_initialized():
             dist.barrier()
+
+        if stop_after_epoch is not None and epoch >= stop_after_epoch:
+            completion_reason = "requested_epoch_boundary"
+            if context.is_main:
+                print(json.dumps({"event": "requested_epoch_boundary", "epoch": epoch}), flush=True)
+            break
 
         # End cleanly at an epoch boundary if another epoch is unlikely to fit.
         # No mid-epoch checkpoint is claimed; a first epoch must fit the job limit.

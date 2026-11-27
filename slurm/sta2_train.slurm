@@ -12,7 +12,22 @@
 #SBATCH --time=12:00:00
 #SBATCH --output=logs/sta2-train-%j.out
 
-set -euo pipefail
+set -Eeuo pipefail
+
+# Emit diagnostics even when environment/module setup fails before Python starts.
+sta2_batch_exit() {
+    local code=$?
+    printf 'STA2 batch exit: job=%s code=%s elapsed_seconds=%s utc=%s\n' \
+        "${SLURM_JOB_ID:-unknown}" "$code" "$SECONDS" "$(date -u +%FT%TZ)"
+    if [[ -n "${RND_MONITOR_API_URL:-}" && -n "${output_dir:-}" && -n "${STA2_PYTHON:-}" ]]; then
+        "$STA2_PYTHON" scripts/monitor_lifecycle.py --output-root "$output_dir" --exit-code "$code" || true
+    fi
+    exit "$code"
+}
+trap sta2_batch_exit EXIT
+trap 'printf "STA2 shell failure: source=%s line=%s code=%s\n" "${BASH_SOURCE[0]:-$0}" "$LINENO" "$?" >&2' ERR
+printf 'STA2 batch start: job=%s host=%s partition=%s utc=%s\n' \
+    "${SLURM_JOB_ID:-unknown}" "$(hostname)" "${SLURM_JOB_PARTITION:-unknown}" "$(date -u +%FT%TZ)"
 
 # Match the cluster module to the selected partition.
 module load "${STA2_CLUSTER_MODULE:-cluster/wice/gpu_a100}"
@@ -113,12 +128,8 @@ unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 # than the original cpu count encoded in SLURM_TRES_PER_TASK.
 unset SLURM_TRES_PER_TASK
 
-if [[ -n "${RND_MONITOR_API_URL:-}" && -n "${output_dir:-}" ]]; then
-    trap 'rnd_exit=$?; "$STA2_PYTHON" scripts/monitor_lifecycle.py --output-root "$output_dir" --exit-code "$rnd_exit" || true' EXIT
-fi
-
 # One launcher, one process per GPU. The trainer owns DDP and accumulation.
 # Resolve Python before srun: the step's PATH may differ from the batch shell.
-srun --ntasks=1 --export=ALL "$STA2_PYTHON" -m torch.distributed.run \
+srun --unbuffered --ntasks=1 --export=ALL "$STA2_PYTHON" -m torch.distributed.run \
     --standalone --nnodes=1 --nproc_per_node="$STA2_GPUS" \
     scripts/train_sta2.py --config "$STA2_TRAIN_CONFIG" "$@"

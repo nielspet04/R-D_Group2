@@ -108,6 +108,10 @@ def parse_args(
     )
     parser.add_argument("--resume", type=Path)
     parser.add_argument(
+        "--stop-after-epoch", type=int,
+        help="Stop after saving this absolute epoch, without changing the learning-rate schedule; useful for a resumable timing run.",
+    )
+    parser.add_argument(
         "--final-epochs", type=int,
         help="Final retraining duration selected on held-out validation. Requires all labelled events in train and an empty validation CSV.",
     )
@@ -226,6 +230,10 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
         config = STA2TrainingConfig.from_mapping(
             resolved["training"]
         )
+        if args.stop_after_epoch is not None and (
+            args.final_epochs is not None or not 1 <= args.stop_after_epoch <= config.max_epochs
+        ):
+            raise ValueError("--stop-after-epoch requires development training and an epoch within max_epochs")
         if args.final_epochs is not None:
             if not 1 <= args.final_epochs <= config.max_epochs:
                 raise ValueError("final epochs must be between 1 and the configured max_epochs")
@@ -375,6 +383,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
                 ),
                 "accumulation_steps": accumulation_steps(config, context.world_size),
                 "resume": str(args.resume) if args.resume else None,
+                "stop_after_epoch": args.stop_after_epoch,
             }
             write_json_atomic(args.output_dir / f"run-manifest-{os.environ.get('SLURM_JOB_ID', 'local')}.json", run_manifest)
             print(json.dumps({"event": "training_setup", **run_manifest}), flush=True)
@@ -439,6 +448,7 @@ def run_training(args: argparse.Namespace) -> dict[str, Any]:
             repository_root=PROJECT_ROOT,
             resume=args.resume,
             final_epochs=args.final_epochs,
+            stop_after_epoch=args.stop_after_epoch,
         )
     finally:
         close_distributed()
