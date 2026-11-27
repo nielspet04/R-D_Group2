@@ -127,6 +127,41 @@ use a separate test audit directory if extension is needed. Record its identity.
 The preflight checks timelines without decoding video. Actual decode failures are
 counted later by inference and receive verified training-only priors.
 
+### Build a separate course test audit when needed
+
+VSC inspection confirmed all 138 course test videos have raw files and supplied FPS
+rows in `data/raw/EPIC_100_video_info.csv`. None is present in the development audit.
+Use `slurm/sta2_test_metadata_cpu.slurm` to create a separate test-only audit.
+It uses the confirmed `/data/leuven/397/vsc39706/conda_envs/rd_sta2/bin/python`
+directly and requests four CPU cores, 8 GB memory, no GPU, and a 12-hour walltime cap.
+The cap is not a runtime prediction. This fully decodes the test videos to inspect
+timestamps; no model is run and no visual features or predictions are produced.
+
+The quote tool must receive a real script file. Run from the VSC repository root:
+
+```bash
+mkdir -p logs
+set -o pipefail
+bash -n slurm/sta2_test_metadata_cpu.slurm
+sam-quote sbatch slurm/sta2_test_metadata_cpu.slurm \
+  | tee logs/sta2-test-metadata-quote.txt
+```
+
+After the quote succeeds and fits the available allowance, submit the same script:
+
+```bash
+sbatch slurm/sta2_test_metadata_cpu.slurm
+```
+
+Record the actual job ID. The log is `logs/sta2-test-metadata-<JOB_ID>.out`.
+Require a successful job exit and `Completed test-video coverage: 138`; inspect
+the reported status counts and diagnose video errors. Quote credits are estimates;
+record the actual settled charge separately. The new manifest is
+`/scratch/leuven/397/vsc39706/epic_sta/sta2_test_timelines_62771307/manifest.json`.
+The script locks this output directory and records source hashes for each job.
+Once completed, set `METADATA` to this manifest and rerun preflight with the other
+selected-model paths unchanged. The original development audit remains intact.
+
 ## 3. Reuse first; quote GPU inference only if needed
 
 `REUSE /.../predictions.pt` means the artifact and metrics match the selected
