@@ -69,7 +69,7 @@ Check with both accounts before a fresh launch. If compact is pending or running
 set -e
 cd "$VSC_DATA/R-D_Group2"
 test -s "$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt"
-test -s "$VSC_SCRATCH/epic_sta/sta2_timelines_local/manifest.json"
+test -s "${STA2_COMPACT_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines_local}/manifest.json"
 test -d "$VSC_SCRATCH/epic_sta/raw_fixed"
 test -s "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
 test -x "$VSC_DATA/miniconda3/envs/rd_sta2/bin/python"

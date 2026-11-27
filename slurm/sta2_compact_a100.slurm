@@ -21,7 +21,7 @@ export STA2_CLUSTER_MODULE=cluster/wice/gpu_a100
 export STA2_TRAIN_CONFIG=configs/sta2/compact.yaml
 unset STA2_TRAIN_PRECISION
 export STA2_RAW_DIR="$VSC_SCRATCH/epic_sta/raw_fixed"
-export STA2_METADATA_DIR="$VSC_SCRATCH/epic_sta/sta2_timelines_local"
+export STA2_METADATA_DIR="${STA2_COMPACT_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines_local}"
 export STA2_CHECKPOINT="$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt"
 export STA2_CONDA_ROOT="$VSC_DATA/miniconda3"
 export STA2_CONDA_ENV="$VSC_DATA/miniconda3/envs/rd_sta2"

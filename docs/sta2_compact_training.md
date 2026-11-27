@@ -90,6 +90,80 @@ Record actual spending plus quotes for pending work. The campaign cap is
 roughly **778k credits** for this 40-hour request; the live quote decides whether
 it fits. Existing spending reduces the remaining allowance.
 
+## Missing timeline manifest — diagnose before allocating GPUs
+
+On 27 November, Niels's preflight stopped because
+`$VSC_SCRATCH/epic_sta/sta2_timelines_local/manifest.json` was missing. No GPU
+job was submitted. This is independent of the Conda path correction; the
+preflight had not reached its dependency-import check yet. The project balance
+is shared and does not establish the remaining STA campaign allowance.
+
+First look for metadata already on your account and confirm the raw videos:
+
+```bash
+for base in "$VSC_SCRATCH/epic_sta" "$VSC_DATA/sta2"; do
+    if [[ -d "$base" ]]; then
+        find "$base" -maxdepth 4 -type f -name manifest.json -print
+    fi
+done
+ls -ld "$VSC_SCRATCH/epic_sta/raw_fixed"
+ls -lh data/raw/EPIC_100_train.csv data/raw/EPIC_100_video_info.csv
+```
+
+An existing manifest is not automatically usable. Confirm its complete flag,
+annotation identity, source-video paths/stat identities, status counts and
+referenced timeline files. `sta2_timelines` was recorded as stale in the older
+full-training guide; do not rename it to bypass the missing-file check. Do not
+copy another account's manifest without validating source identities. If raw
+videos are absent, restore/stage the supplied videos first.
+
+Niels subsequently inspected `sta2_timelines/manifest.json`: `complete: true`,
+495 `ok` videos, both input hashes matching, exact annotation video coverage,
+no recorded errors and no missing timeline files. This supersedes the assumption
+that this account's directory was necessarily stale. Source-video identities
+and timeline contents still need the full check below.
+
+After transferring the updated checker, preflight and compact wrapper to VSC:
+
+```bash
+export STA2_COMPACT_METADATA_DIR="$VSC_SCRATCH/epic_sta/sta2_timelines"
+python scripts/check_sta2_metadata.py \
+    --metadata-dir "$STA2_COMPACT_METADATA_DIR" \
+    --raw-dir "$VSC_SCRATCH/epic_sta/raw_fixed"
+bash scripts/prepare_sta2_compact_a100.sh --timing
+```
+
+The checker reads source-video size/mtime, the saved timeline SHA-256, PTS dtype,
+frame count, zero origin and strict timestamp order, plus supplied FPS and
+positive time base. It does not decode videos or modify metadata. The preflight
+also runs it automatically before quoting. Keep `STA2_COMPACT_METADATA_DIR`
+exported in the submission shell; both the timing and normal compact A100
+wrappers use it. Preserve that same export when resuming, and use the same
+manifest for the later validation comparison. Do not rename or symlink the
+metadata directory to make a hardcoded path pass.
+
+If no usable manifest exists and the raw videos and both input CSVs are
+available, build it with the CPU job. The metadata launcher now uses the
+confirmed Conda path and defaults to the same `sta2_timelines_local` directory
+as compact training. Transfer those changes first; then quote and inspect the
+CPU allocation before submitting:
+
+```bash
+mkdir -p logs
+export STA2_RAW_DIR="$VSC_SCRATCH/epic_sta/raw_fixed"
+export STA2_METADATA_DIR="$VSC_SCRATCH/epic_sta/sta2_timelines_local"
+sam-quote sbatch slurm/sta2_metadata_cpu.slurm
+# Submit after checking the CPU quote and that no metadata scan is active:
+sbatch --export=ALL slurm/sta2_metadata_cpu.slurm
+```
+
+This is a four-CPU, 8 GB, up-to-12-hour scan with a directory lock and resumable
+verified timeline files. It does not train or request GPUs. Inspect
+`logs/sta2-metadata-JOBID.out` and accounting after completion; the final coverage
+check must pass, and recorded video errors still require review. Rerun the
+timing preflight only after the manifest is available. A GPU timing measurement
+cannot be made until these data prerequisites pass.
+
 ## First run: one complete epoch for timing and cost
 
 Use `slurm/sta2_compact_a100_timing.slurm` before committing to 40 hours. It

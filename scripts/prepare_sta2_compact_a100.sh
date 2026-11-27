@@ -14,6 +14,8 @@ fi
 : "${VSC_DATA:?Run this on your VSC Bash login node}"
 : "${VSC_SCRATCH:?VSC_SCRATCH must be set}"
 cd "$VSC_DATA/R-D_Group2"
+metadata_dir="${STA2_COMPACT_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines_local}"
+printf 'Compact metadata directory: %s\n' "$metadata_dir"
 
 for command in squeue sacct sam-balance sam-quote; do
     command -v "$command" >/dev/null
@@ -42,7 +44,7 @@ fi
 
 for file in \
     "$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt" \
-    "$VSC_SCRATCH/epic_sta/sta2_timelines_local/manifest.json" \
+    "$metadata_dir/manifest.json" \
     "$VSC_DATA/miniconda3/etc/profile.d/conda.sh" \
     data/raw/EPIC_100_train.csv \
     data/processed/EPIC_100_train_participant_split.csv \
@@ -77,6 +79,8 @@ print("PyTorch:", torch.__version__)
 print("CUDA build:", torch.version.cuda)
 print("STA2 dependency imports passed; GPU availability is checked in the allocation.")
 PYENV
+"$sta2_python" scripts/check_sta2_metadata.py \
+    --metadata-dir "$metadata_dir" --raw-dir "$VSC_SCRATCH/epic_sta/raw_fixed"
 bash -n slurm/sta2_compact_a100.slurm
 bash -n slurm/sta2_train.slurm
 bash -n "$launcher"
