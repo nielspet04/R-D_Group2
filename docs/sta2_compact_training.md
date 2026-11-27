@@ -164,6 +164,27 @@ check must pass, and recorded video errors still require review. Rerun the
 timing preflight only after the manifest is available. A GPU timing measurement
 cannot be made until these data prerequisites pass.
 
+## Live preflight result — 27 November 2026, 15:08 Brussels
+
+Niels ran the timing preflight on `k28i18`, checkout
+`eb545e29f78492af8e6e7d1bbcb5c4f17e209192`. Dependency imports passed using
+`$VSC_DATA/miniconda3/envs/rd_sta2/bin/python` (PyTorch `2.5.1+cu118`, CUDA
+build `11.8`). All **495/495** source-video identities and timeline integrity
+checks passed in `$VSC_SCRATCH/epic_sta/sta2_timelines`. No compact training
+job or existing compact best checkpoint was shown for this account.
+`slurm/sta2_compact_h100.slurm` has a local modification; preserve it.
+
+The live quote for two A100s, 16 CPUs, 128000 MiB and 12 hours was
+**238,320 credits**, equivalent to **19,860 credits/hour**. This is a quote for
+the full requested duration, not an incurred charge. Record actual allocation
+elapsed time and billed credits after completion. The shared account balance
+does not establish how much of the 1.1M development/3M campaign allowance remains.
+
+Hosted uploads were **not configured** in the submission shell. Local Slurm
+logs, history and checkpoints remain available without them. No GPU execution,
+full epoch duration or actual cost has yet been measured; no timing job ID has
+yet been reported. Check the other account before submitting an equivalent job.
+
 ## First run: one complete epoch for timing and cost
 
 Use `slurm/sta2_compact_a100_timing.slurm` before committing to 40 hours. It
@@ -311,6 +332,51 @@ unset STA2_COMPACT_RESUME_RUN
 Keep the same wrapper, world size, inputs and settings. Checkpoints save at
 epoch boundaries; an interrupted incomplete epoch can be lost. Do not switch
 an H100 run into this A100 wrapper without validating cross-launcher resume.
+
+## Collect the handoff for Emiel
+
+Use the actual compact timing/training job ID printed by `sbatch`. No submitted
+compact job ID or completed epoch has yet been supplied in this chat. Do not
+use the interactive VS Code job ID or the failed H100 attempt as the A100 ID.
+Locate the attempt with:
+
+```bash
+squeue -M wice -u "$USER" -o '%i %j %P %T %M %l %R'
+sacct -M wice -u "$USER" -S 2026-11-27 -X \
+    --format=JobID,JobName%35,Partition,State,Elapsed,ExitCode
+```
+
+After transferring the collector to VSC and activating the confirmed environment:
+
+```bash
+python scripts/collect_sta2_handoff.py --job-id REPLACE_WITH_COMPACT_JOB_ID \
+    --credits-per-hour 19860
+```
+
+The rate is derived from the 238,320-credit/12-hour quote, not an actual charge.
+Add `--actual-credits NUMBER` only when VSC has reported this attempt's actual
+charge. For a resume job, also pass `--run-dir results/sta2/compact-a100-ORIGINAL_JOB_ID`.
+
+The collector creates a unique folder under `results/sta2/handoffs/` containing
+an independent `best.pt`, SHA-256 checksums, checkpoint metadata, history,
+run manifests, available training logs, current Git revision/status/HEAD diff,
+raw scheduler snapshots, and `handoff.json` with hours and estimated credits per
+epoch. It reads one atomically saved checkpoint version even if training is
+active. History and logs are separate snapshots and may be newer or incomplete;
+the report checks whether the best epoch appears in the copied history.
+Untracked filenames are listed; their contents are not copied. Check the report's
+missing-files list before sharing. No cloud key files are intentionally collected.
+
+Accounting query failures remain UNKNOWN. A terminal Slurm attempt makes its
+saved result stable for that attempt, not necessarily the final experiment or
+submission choice. Active training is explicitly described as a snapshot.
+Actual job charges are not invented or attributed per epoch. For multi-attempt
+runs, this job's charge/elapsed time covers only the requested attempt; epoch
+history can cover earlier attempts as well. The collector does not send or upload
+anything: share the generated folder with Emiel through the team's usual method.
+
+Local fixture checks verified copying/hashing, available artifacts, completed
+scheduler parsing and cost arithmetic; live VSC collection remains to be run.
 
 ## Handoff for comparison
 
