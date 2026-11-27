@@ -17,12 +17,12 @@ module load cluster/wice/batch
 
 # Reuse the verified private environment; do not load Miniforge3.
 source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate "$VSC_DATA/conda_envs/rd_sta2"
+conda activate "$VSC_DATA/miniconda3/envs/rd_sta2"
 
 cd "${STA2_PROJECT_DIR:-$VSC_DATA/R-D_Group2}"
 
 STA2_RAW_DIR="${STA2_RAW_DIR:-$VSC_SCRATCH/epic_sta/raw_fixed}"
-STA2_METADATA_DIR="${STA2_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines}"
+STA2_METADATA_DIR="${STA2_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines_local}"
 STA2_ANNOTATIONS="${STA2_ANNOTATIONS:-data/raw/EPIC_100_train.csv}"
 STA2_VIDEO_INFO="${STA2_VIDEO_INFO:-data/raw/EPIC_100_video_info.csv}"
 

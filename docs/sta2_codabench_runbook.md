@@ -41,6 +41,16 @@ The STA development split has **59,767 training events from 26 participants** an
 
 ## 3. Check and launch compact training
 
+Niels’s focused A100 instructions are in [compact training](sta2_compact_training.md).
+Start with its one-complete-epoch timing job (`bash scripts/prepare_sta2_compact_a100.sh --timing`),
+record timing and actual/estimated credits, then resume the saved checkpoint if selected.
+This requests 12 hours on the normal A100 partition, not the 30-minute debug queue.
+The A100 wrapper defaults to 40 hours. `bash scripts/prepare_sta2_compact_a100.sh`
+checks local-account prerequisites and prints the live quote without submitting.
+Source your existing private dashboard environment first if uploads are wanted;
+direct `sbatch` uses the trainer’s integrated reporting. Check both accounts and
+the remaining credit allowance before submission.
+
 Run the shell commands on a **VSC Bash** login node. The compact launcher fixes the repository, dataset, checkpoint, and environment locations shown below. Check them from the account that will run the job. On that account, update the checkout to the agreed `STA2_dev` revision if needed.
 
 ```bash
@@ -59,10 +69,10 @@ Check with both accounts before a fresh launch. If compact is pending or running
 set -e
 cd "$VSC_DATA/R-D_Group2"
 test -s "$VSC_DATA/sta2/checkpoints/vjepa2_1_vitG_384.pt"
-test -s "$VSC_SCRATCH/epic_sta/sta2_timelines_local/manifest.json"
+test -s "${STA2_COMPACT_METADATA_DIR:-$VSC_SCRATCH/epic_sta/sta2_timelines_local}/manifest.json"
 test -d "$VSC_SCRATCH/epic_sta/raw_fixed"
 test -s "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-test -x "$VSC_DATA/conda_envs/rd_sta2/bin/python"
+test -x "$VSC_DATA/miniconda3/envs/rd_sta2/bin/python"
 test -s data/raw/EPIC_100_train.csv
 test -s data/processed/EPIC_100_train_participant_split.csv
 test -s data/processed/EPIC_100_validation_participant_split.csv
@@ -127,7 +137,7 @@ set -e
 cd "$VSC_DATA/R-D_Group2"
 module load cluster/wice/gpu_a100
 source "$VSC_DATA/miniconda3/etc/profile.d/conda.sh"
-conda activate "$VSC_DATA/conda_envs/rd_sta2"
+conda activate "$VSC_DATA/miniconda3/envs/rd_sta2"
 
 export ANNOTATIONS=data/raw/EPIC_100_train.csv
 export TRAIN_SPLIT=data/processed/EPIC_100_train_participant_split.csv
