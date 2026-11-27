@@ -213,9 +213,17 @@ def _run_prediction_pass(
     bf16: bool,
     world_size: int,
 ) -> list[dict[str, Any]]:
+    def progress_batches():
+        rank = int(os.environ.get("RANK", "0"))
+        total = len(loader)
+        for batch_number, batch in enumerate(loader, start=1):
+            yield batch
+            if batch_number % 100 == 0 or batch_number == total:
+                print(f"Rank {rank}: inferred {batch_number}/{total} batches in this pass", flush=True)
+
     local_records = collect_local_predictions(
         model,
-        loader,
+        progress_batches(),
         device=device,
         verb_prior=verb_prior,
         noun_prior=noun_prior,
@@ -239,6 +247,8 @@ def evaluate_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
 
     context = initialize_distributed(require_cuda=True)
     try:
+        if context.is_main:
+            print("Checking checkpoint, data splits, and backbone SHA-256...", flush=True)
         checkpoint_stat = args.checkpoint.stat() if context.is_main else None
         checkpoint_sha256_before = (
             sha256_file(args.checkpoint) if context.is_main else None
@@ -340,6 +350,8 @@ def evaluate_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
             prefetch_factor=int(data_configuration.get("prefetch_factor", 1)),
         )
 
+        if context.is_main:
+            print(f"Loading frozen backbone and head for {len(events)} {args.split} events...", flush=True)
         backbone = FrozenAnticipationBackbone.from_checkpoint(
             args.backbone_checkpoint,
             _read_yaml(args.backbone_config),
@@ -355,6 +367,8 @@ def evaluate_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
         # restored. Release their CPU storage as soon as the head is loaded.
         del checkpoint
         model = STA2Model(backbone, head).to(context.device)
+        if context.is_main:
+            print("Starting inference pass 1/2...", flush=True)
         first = _run_prediction_pass(
             model=model,
             loader=loader,
@@ -368,6 +382,8 @@ def evaluate_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
 
         del model
         del head
+        if context.is_main:
+            print("Reloading checkpoint for independent inference pass 2/2...", flush=True)
         reloaded_checkpoint = load_evaluation_checkpoint(args.checkpoint)
         reloaded_head = build_head_from_checkpoint(
             reloaded_checkpoint, embed_dim=backbone.embed_dim
@@ -387,6 +403,8 @@ def evaluate_checkpoint(args: argparse.Namespace) -> dict[str, Any]:
             world_size=context.world_size,
         )
         assert_reloaded_predictions_equal(first, second)
+        if context.is_main:
+            print("PASS independent reload: both inference passes agree", flush=True)
 
         if args.split == "validation":
             summary, predictions = score_prediction_records(

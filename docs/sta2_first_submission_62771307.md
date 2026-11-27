@@ -193,9 +193,8 @@ set -o pipefail
 mkdir -p logs
 bash -n slurm/sta2_test_a100.slurm
 sam-balance
-export INFERENCE_WALLTIME=04:00:00
-sam-quote sbatch --time="$INFERENCE_WALLTIME" slurm/sta2_test_a100.slurm \
-  | tee "$PREP/inference-quote.txt"
+sam-quote sbatch slurm/sta2_test_a100.slurm \
+  | tee logs/sta2-test-62771307-quote.txt
 ```
 
 This quotes **two A100s, 16 CPU cores, 128000 MB, four hours**. Four hours is a
@@ -205,10 +204,20 @@ existing evaluator timing to adjust walltime, then re-quote the identical reques
 Read the live quote against the remaining campaign allowance before submitting.
 No credit figure has been measured here. A quote is an estimate, not an actual charge.
 
+The confirmed course table has 9,668 unique events and SHA-256
+`b88a87c285d8c004e36c55a2eea021324a9649823ef80c9463896ca7c0325412`.
+The CPU timing check reported 9,448 full-context, 192 partial-context, 28 no-context,
+and zero predecode video-error events. The launcher sets all paths and uses the
+completed test audit, regardless of exports or Conda activation in the submitting
+terminal. It checks the passing preflight and frozen input identities, preserves
+that report and inference input hashes, and lets the evaluator reverify backbone
+weights. It does not repeat the entire CPU preflight inside the GPU allocation.
+The evaluator logs both passes and progress every 100 batches per rank.
+
 After the live quote fits the available allowance, submit that same request:
 
 ```bash
-sbatch --time="$INFERENCE_WALLTIME" slurm/sta2_test_a100.slurm
+sbatch slurm/sta2_test_a100.slurm
 # Set to the actual ID printed by sbatch:
 export EVAL_JOB=REPLACE_WITH_ACTUAL_JOB_ID
 squeue -M wice -j "$EVAL_JOB" -o '%i %j %P %T %M %l %R'
