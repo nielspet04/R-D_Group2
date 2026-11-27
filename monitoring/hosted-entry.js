@@ -1,16 +1,20 @@
 import {createClient} from '@supabase/supabase-js';
+import {ProjectScope} from './hosted-projects.js';
 const config=window.MONITOR_CONFIG||{};
 let session=null, client=null, latestOverview=null;
+const scope=new ProjectScope(config.projectId);
+let projectReady=Promise.resolve();
 const $=id=>document.getElementById(id);
-function clearPrivate(){for(const id of ['jobs','detail','compare','sources','cards']){$(id).replaceChildren();delete $(id).dataset.signature}if($('new-key'))$('new-key').value='';if($('key-list'))$('key-list').replaceChildren();$('key-result').hidden=true;$('key-controls').hidden=true;latestOverview=null;window.dispatchEvent(new Event('monitor:signout'))}
+function clearPrivate(){for(const id of ['jobs','detail','compare','sources','cards','notice','empty','owner-message']){$(id).replaceChildren();delete $(id).dataset.signature}if($('new-key'))$('new-key').value='';if($('key-list'))$('key-list').replaceChildren();$('key-result').hidden=true;$('key-controls').hidden=true;latestOverview=null;window.dispatchEvent(new Event('monitor:signout'))}
 async function call(functionName,path,method='GET',body){
+  await projectReady;
   if(!session)throw Error('Sign in to view private results.');
-  const requestUser=session.user.id;
+  const context=scope.capture();
   const url=new URL(`${config.supabaseUrl}/functions/v1/${functionName}/v1/${path}`);
-  url.searchParams.set('project_id',config.projectId);
+  url.searchParams.set('project_id',context.projectId);
   const response=await fetch(url,{method,headers:{apikey:config.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(15000)});
   const value=await response.json().catch(()=>({}));
-  if(session?.user.id!==requestUser)throw Error('Signed out; private response discarded.');
+  scope.assert(context);
   if(!response.ok){if(response.status===401)throw Error('Login expired. Please sign out and sign in again.');if(response.status===403)throw Error('Your account has no project access yet. Follow the owner bootstrap step in the setup guide.');throw Error(value.message||'Backend unavailable. The free project may be paused; resume it in Supabase and try again.')}
   return value;
 }
@@ -22,6 +26,8 @@ async function fullRun(id){
 }
 window.monitorSource={mode:'hosted',ready:null,async request(path){
   await this.ready;
+  await projectReady;
+  const context=scope.capture();
   const url=new URL(path,location.origin);
   if(url.pathname==='/api/jobs')return {items:[],next_cursor:null};
   if(url.pathname==='/api/status'){
@@ -31,26 +37,45 @@ window.monitorSource={mode:'hosted',ready:null,async request(path){
   if(url.pathname==='/api/experiments'){
     const items=[];let cursor=0;
     do{const page=await call('monitor-read','overview?limit=50&cursor='+cursor);items.push(...page.items);cursor=page.next_cursor;if(items.length>=1000)break;}while(cursor!==null);
-    latestOverview={items,next_cursor:cursor};return latestOverview;
+    scope.assert(context);latestOverview={items,next_cursor:cursor};return latestOverview;
   }
-  if(url.pathname.startsWith('/api/experiments/'))return fullRun(decodeURIComponent(url.pathname.split('/').at(-1)));
+  if(url.pathname.startsWith('/api/experiments/')){const run=await fullRun(decodeURIComponent(url.pathname.split('/').at(-1)));scope.assert(context);return run;}
   if(url.pathname==='/api/compare'){
     const ids=(url.searchParams.get('ids')||'').split(',');if(ids.length>6)throw Error('Select at most six experiments.');
-    return {runs:await Promise.all(ids.map(fullRun))};
+    const runs=await Promise.all(ids.map(fullRun));scope.assert(context);return {runs};
   }
   throw Error('Unsupported hosted request');
 }};
 
 async function initialize(){
   $('auth-panel').hidden=false;$('refresh').textContent='Refresh view';
-  if(!config.supabaseUrl||!config.publishableKey||!config.projectId){$('auth-message').textContent='Hosting files are ready. Configure the public Supabase settings using the setup guide before deploying.';$('signin').disabled=true;return}
+  if(!config.supabaseUrl||!config.publishableKey){$('auth-message').textContent='Hosting files are ready. Configure the public Supabase settings using the setup guide before deploying.';$('signin').disabled=true;return}
   client=createClient(config.supabaseUrl,config.publishableKey,{auth:{flowType:'pkce',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
   const renderSession=()=>{
     $('signin').hidden=!!session;$('signout').hidden=!session;$('owner-panel').hidden=!session;
-    $('auth-message').textContent=session?'Signed in. User ID for owner setup: '+session.user.id:'Sign in to view your private training results.';
+    $('auth-message').textContent=session?'Signed in. User ID: '+session.user.id:'Sign in to view your private training results.';
   };
-  session=(await client.auth.getSession()).data.session;renderSession();
-  client.auth.onAuthStateChange((_event,next)=>{const signedOut=session&&!next;session=next;renderSession();if(signedOut)clearPrivate();window.dispatchEvent(new Event('monitor:auth'))});
+  const updateSession=next=>{
+    const sameUser=scope.userId===(next?.user.id||null);
+    session=next;renderSession();
+    if(sameUser)return;
+    scope.reset(next?.user.id);clearPrivate();$('project-picker').hidden=true;$('project-choice').replaceChildren();
+    if(!next){projectReady=Promise.resolve();return}
+    const version=scope.version;
+    // Run Supabase queries after the auth callback releases its session lock.
+    projectReady=new Promise(resolve=>setTimeout(resolve,0)).then(async()=>{
+      if(version!==scope.version||!await scope.discover(client))return;
+      const select=$('project-choice');
+      for(const project of scope.projects){const option=document.createElement('option');option.value=project.id;option.textContent=project.name;select.append(option)}
+      select.value=scope.projectId||'';$('project-picker').hidden=!scope.projects.length;
+      if(!scope.projectId)$('auth-message').textContent+=' · No project access yet. Ask the administrator to add this User ID.';
+    }).catch(error=>{if(version===scope.version)$('auth-message').textContent=error.message}).finally(()=>{
+      if(version===scope.version)window.dispatchEvent(new Event('monitor:auth'));
+    });
+  };
+  updateSession((await client.auth.getSession()).data.session);
+  client.auth.onAuthStateChange((_event,next)=>updateSession(next));
+  $('project-choice').onchange=()=>{scope.choose($('project-choice').value);clearPrivate();$('owner-message').textContent='';window.dispatchEvent(new Event('monitor:auth'))};
   $('signin').onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:'github',options:{redirectTo:location.origin+'/'}});if(error)$('auth-message').textContent=error.message};
   $('signout').onclick=async()=>{await client.auth.signOut();clearPrivate()};
   $('open-owner').onclick=async()=>{

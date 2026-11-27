@@ -43,6 +43,22 @@ try{
  assert.equal((await db.query('select monitor_run($1,$2) as run',[project,experiment])).rows[0].run.history.length,2);
  assert.equal((await db.query('select monitor_overview($1) as data',[project])).rows[0].data[0].best.action_mt5r,0.4);
  assert.equal((await db.query('select monitor_overview($1) as data',[other])).rows[0].data.length,0);
+ // Two private owners share one backend, but neither can discover/read the other's project.
+ await db.exec('reset role');
+ await db.query(`insert into project_members values($1,$2,'owner')`,[other,stranger]);
+ await db.query(`insert into source_profiles(project_id,id,label) values($1,$2,'private wice')`,[other,id(20)]);
+ await db.query(`insert into experiments(project_id,id,profile_id,model) values($1,$2,$3,'private model')`,[other,id(21),id(20)]);
+ await db.exec(`set role authenticated;select set_config('request.jwt.claim.sub','${owner}',false)`);
+ assert.deepEqual((await db.query('select id from monitor_projects')).rows.map(r=>r.id),[project]);
+ assert.deepEqual((await db.query('select id from source_profiles')).rows.map(r=>r.id),[profile]);
+ assert.equal((await db.query('select monitor_run($1,$2) as run',[other,id(21)])).rows[0].run,null);
+ await db.exec(`select set_config('request.jwt.claim.sub','${stranger}',false)`);
+ assert.deepEqual((await db.query('select id from monitor_projects')).rows.map(r=>r.id),[other]);
+ assert.deepEqual((await db.query('select id from experiments')).rows.map(r=>r.id),[id(21)]);
+ assert.deepEqual((await db.query('select id from source_profiles')).rows.map(r=>r.id),[id(20)]);
+ assert.equal((await db.query('select monitor_run($1,$2) as run',[project,experiment])).rows[0].run,null);
+ assert.equal((await db.query('select monitor_overview($1) as data',[project])).rows[0].data.length,0);
+ await db.exec(`select set_config('request.jwt.claim.sub','${owner}',false)`);
  await assert.rejects(()=>db.query('select monitor_ingest($1,$2::jsonb)',[credential,JSON.stringify([event('progress',{phase:'bad'})])]),/permission denied/);
  await db.exec('reset role');await db.query('update upload_credentials set revoked_at=now() where id=$1',[credential]);
  await assert.rejects(()=>ingest([event('progress',{phase:'training'})]),/credential_denied/);

@@ -5,6 +5,7 @@
   "scripts": {
     "build": "node scripts/build_hosted.mjs",
     "test:db": "node tests/hosted/database.test.mjs",
+    "test:projects": "node tests/hosted/projects.test.mjs && node tests/hosted/auth.test.mjs",
     "test:contracts": "deno test supabase/functions/_shared/contracts_test.ts"
   },
   "dependencies": {

@@ -65,7 +65,56 @@ Repeat the public setup command with the same project settings and the user UUID
 python scripts/hosted_setup.py --supabase-url https://YOUR_REF.supabase.co --publishable-key YOUR_PUBLISHABLE_KEY --owner-id YOUR_USER_UUID
 ```
 
-Run the regenerated `results/monitoring/hosted-bootstrap.sql` in the Supabase SQL Editor. Then refresh the website. Only explicitly authorized project members can read results; being logged into GitHub alone is insufficient. For teammates, add their Supabase user UUIDs to `project_members` with role `viewer` using the owner/admin route or SQL Editor. Do not grant public table access.
+Run the regenerated `results/monitoring/hosted-bootstrap.sql` in the Supabase SQL Editor. Then refresh the website. Only explicitly authorized project members can read results; being logged into GitHub alone is insufficient. For teammates who should share all this project's results, add their Supabase user UUIDs to `project_members` with role `viewer` using the owner/admin route or SQL Editor. For private runs, use the separate-project workflow below. Do not grant public table access.
+
+### Private runs for a teammate (including Niels)
+
+Membership is project-wide: adding a teammate as a viewer to your project lets
+them read all its runs. For private runs, give that teammate a separate research
+project **inside the existing Supabase backend**. No extra Supabase or Cloudflare
+account/project is required. The website discovers accessible research projects
+using the signed-in user's row-level permissions. Your configured default project
+is used only when that user is a member; otherwise their own project opens. The
+Project selector lists only projects they can access.
+
+Have the teammate sign in at <https://training-observatory.pages.dev/> and provide
+the displayed User ID. Prepare their SQL locally:
+
+```powershell
+python scripts/hosted_private_setup.py --user-id TEAMMATE_USER_UUID --name "Niels - VSC training" --output results/monitoring/niels-private-project.sql
+```
+
+Run the generated SQL in the existing project's SQL Editor, or with the installed
+CLI: `npx.cmd supabase db query --remote=YOUR_REF --file results/monitoring/niels-private-project.sql --yes`.
+The script checks that the user exists, creates a stable private project/source
+profile, and makes that user the sole project **owner**. This lets them create and
+revoke their own upload keys. It does not add them to your original project or add
+you to theirs. Re-running the same command reuses their project. Existing shared
+memberships, if any, must be reviewed separately; this command never removes them.
+Backend administrators retain administrative database access.
+
+Build and redeploy the website from step 3 after updating the project-discovery
+code. No SQL schema migration or Edge Function update is needed for this feature.
+The teammate then refreshes the website, opens **Uploader setup → Manage uploader
+keys**, and creates their own **Training uploads only** key. They download and
+transfer it privately to **their own VSC account** using step 5. Do not reuse
+another person's upload key: the key determines which project receives a run.
+
+On their VSC account, update the checkout while preserving any local edits, then
+configure:
+
+```bash
+export RND_MONITOR_API_URL="https://kdhaypsvbagfsxhgzqmu.supabase.co/functions/v1/monitor-ingest"
+export RND_MONITOR_UPLOAD_KEY_FILE="$HOME/.config/rd-dashboard/upload-key"
+python scripts/monitor_upload.py --probe
+```
+
+Export/source these settings in the shell that submits their next training job.
+For existing saved runs use the dry-run/backfill workflow in step 8; an already
+running training process cannot pick up newly exported variables. Their runs
+appear in their private project after a successful upload. Verify with each
+person's own sign-in that only their project appears. No retraining is needed to
+import saved completed epochs.
 
 ## 5. Create the VSC upload credential
 
@@ -214,6 +263,7 @@ Run checks from the repository root:
 ```powershell
 python -m unittest discover -s tests -p 'test_monitor*.py' -v
 npm.cmd run test:db
+npm.cmd run test:projects
 npm.cmd run test:contracts
 deno check supabase/functions/monitor-ingest/index.ts supabase/functions/monitor-read/index.ts supabase/functions/monitor-admin/index.ts
 npm.cmd run build
@@ -222,3 +272,11 @@ npm.cmd run build
 Database tests use an embedded real Postgres engine (PGlite) and exercise SQL migrations, row-level policies, denied writes, idempotency, transactional rollback, resume projection and revocation. They simulate the request's user UUID; they do not verify hosted Supabase JWT gateway/OAuth behavior. Python tests cover durable files, contract parity, failure isolation and replay; Deno validates the shared Edge contracts/types.
 
 Live GitHub owner sign-in, the VSC shell connectivity probe and six historical imports are verified. Compute-node outbound connectivity, free-project pause/restore and actual GPU/DDP integration remain unverified. PyTorch is absent from the local development shell. No real VSC job is submitted by the build/test commands above.
+
+27 November 2026: private-project discovery was deployed to the existing Pages
+production site. Niels's account is the sole owner of his separate research
+project; the original project retains its original membership. Production HTML
+and both JavaScript bundles matched the tested local build. The 42 Python
+monitoring tests, database isolation checks, hosted account-switching tests and
+build passed. Niels still needs to configure his own VSC upload key; no training
+or upload from his VSC account was performed during this setup.
